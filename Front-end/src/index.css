@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased bg-white;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+@layer components {
+  .line-clamp-2 {
+    @apply overflow-hidden text-ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+
+  .prose {
+    @apply text-gray-700 leading-relaxed;
+  }
+
+  .prose-lg {
+    @apply text-lg;
+  }
+
+  /* Cards com destaque roxo */
+  .news-card {
+    @apply rounded-lg overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 hover:scale-105 bg-white border-l-4 border-sao-luis-purple;
+  }
+
+  /* Botões com cores roxo */
+  .btn-sao-luis {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 bg-gradient-purple text-white hover:shadow-lg;
+  }
+
+  .btn-sao-luis-outline {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-300 border-2 border-sao-luis-purple text-sao-luis-purple hover:bg-sao-luis-purple-light;
+  }
+
+  /* Badges coloridas */
+  .badge-sao-luis {
+    @apply inline-block px-3 py-1 rounded-full text-sm font-semibold bg-sao-luis-purple-light text-sao-luis-purple;
+  }
+
+  /* Background com imagem paralax */
+  .parallax-bg {
+    background-attachment: fixed;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+  }
+
+  /* Overlay para imagens de fundo */
+  .bg-overlay-dark {
+    background-color: rgba(0, 0, 0, 0.4);
+    mix-blend-mode: overlay;
+  }
+
+  .bg-overlay-light {
+    background-color: rgba(255, 255, 255, 0.2);
+    mix-blend-mode: lighten;
+  }
+}
+
+@layer utilities {
+  .transition-all {
+    @apply transition-colors transition-transform transition-shadow;
+  }
+
+  /* Brilho animado para destaque */
+  @keyframes glow {
+    0%, 100% {
+      box-shadow: 0 0 5px rgba(124, 58, 237, 0.5);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(124, 58, 237, 0.8);
+    }
+  }
+
+  .glow {
+    animation: glow 2s ease-in-out infinite;
+  }
+
+  /* Animação de fade-in para elementos */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  /* Efeito de ondulação para elementos decorativos */
+  @keyframes wave {
+    0%, 100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  .animate-wave {
+    animation: wave 2s ease-in-out infinite;
+  }
+
+  /* Sombra suave para cards */
+  .shadow-sao-luis {
+    box-shadow: 0 10px 30px rgba(124, 58, 237, 0.2);
+  }
+
+  /* Borda gradiente */
+  .border-gradient {
+    background: linear-gradient(90deg, #7C3AED, #6D28D9);
+    padding: 2px;
+  }
+}
