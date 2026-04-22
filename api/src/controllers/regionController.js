@@ -1,32 +1,39 @@
-const db = require('../database/db');
+const supabase = require('../database/db');
 
-exports.getAllRegions = (req, res) => {
-  db.all('SELECT * FROM regions WHERE id != "all"', [], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    res.json(rows);
-  });
+exports.getAllRegions = async (req, res) => {
+  try {
+    const { data, error } = await supabase.from('regions').select('*').neq('id', 'all');
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-exports.getRegionData = (req, res) => {
+exports.getRegionData = async (req, res) => {
   const regionId = req.params.id;
-  db.get('SELECT * FROM socio_data WHERE region_id = ?', [regionId], (err, row) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (row) {
-      res.json(row);
+  try {
+    const { data, error } = await supabase.from('socio_data').select('*').eq('region_id', regionId).maybeSingle();
+    if (error) throw error;
+    
+    if (data) {
+      res.json(data);
     } else {
       res.status(404).json({ error: 'Dados não encontrados.' });
     }
-  });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
 
-exports.getRegionNews = (req, res) => {
+exports.getRegionNews = async (req, res) => {
   const regionId = req.params.id;
-  db.all('SELECT * FROM news WHERE region_id = ? ORDER BY id DESC', [regionId], (err, rows) => {
-    if (err) return res.status(500).json({ error: err.message });
-    if (rows && rows.length > 0) {
-      res.json({ region_id: regionId, articles: rows });
-    } else {
-      res.status(404).json({ error: 'Notícias não encontradas.' });
-    }
-  });
+  try {
+    const { data, error } = await supabase.from('news').select('*').eq('region_id', regionId).order('id', { ascending: false });
+    if (error) throw error;
+    
+    res.json({ region_id: regionId, articles: data || [] });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };
