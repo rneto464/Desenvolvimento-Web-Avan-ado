@@ -1,4 +1,4 @@
-const supabase = require('../database/db');
+const { publicClient: supabase } = require('../database/db');
 
 exports.getAllRegions = async (req, res) => {
   try {
@@ -28,11 +28,23 @@ exports.getRegionData = async (req, res) => {
 
 exports.getRegionNews = async (req, res) => {
   const regionId = req.params.id;
+  const { page, limit } = req.pagination;
+  const from = (page - 1) * limit;
+  const to   = from + limit - 1;
+
   try {
-    const { data, error } = await supabase.from('news').select('*').eq('region_id', regionId).order('id', { ascending: false });
+    let query = supabase
+      .from('news')
+      .select('*', { count: 'exact' })
+      .order('id', { ascending: false })
+      .range(from, to);
+
+    if (regionId !== 'all') query = query.eq('region_id', regionId);
+
+    const { data, count, error } = await query;
     if (error) throw error;
-    
-    res.json({ region_id: regionId, articles: data || [] });
+
+    res.json({ region_id: regionId, page, limit, total: count ?? 0, articles: data || [] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

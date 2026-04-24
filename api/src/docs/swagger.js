@@ -23,7 +23,8 @@ O robô de scraping do G1 Maranhão executa automaticamente a cada hora (\`cron 
 e também na inicialização do servidor. Não é necessário chamar \`POST /api/news/external/g1/sync\`
 manualmente em produção.
 
-**Autenticação:** Nenhuma — a API é pública.
+**Autenticação:** Rotas de escrita (POST, PUT, DELETE) exigem \`Authorization: Bearer <API_SECRET_KEY>\`.
+Rotas de leitura (GET) são públicas.
 
 **CORS:** Aberto para qualquer origem (\`Access-Control-Allow-Origin: *\`).
 Qualquer frontend (React, Vue, Angular, Next.js, etc.) pode consumir esta API diretamente.
@@ -38,6 +39,16 @@ Qualquer frontend (React, Vue, Angular, Next.js, etc.) pode consumir esta API di
           description: 'Servidor Local'
         }
       ]
+    },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'API Key',
+          description: 'Informe o valor de API_SECRET_KEY definido no .env'
+        }
+      }
     }
   },
   apis: ['./src/routes/*.js'] // Caminho onde estão os arquivos de rota com as anotações

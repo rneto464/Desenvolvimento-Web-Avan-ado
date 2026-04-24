@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const newsController = require('../controllers/newsController');
+const requireAuth = require('../middleware/auth');
+const { validateId, validateCreateNews, validateUpdateNews } = require('../middleware/validate');
 
 /**
  * @swagger
@@ -47,10 +49,16 @@ const newsController = require('../controllers/newsController');
  *                   type: integer
  *                   description: Artigos novos efetivamente inseridos no banco
  *                   example: 5
+ *       401:
+ *         description: Token ausente ou mal formatado
+ *       403:
+ *         description: Chave de API inválida
  *       500:
  *         description: Erro no scraping ou no banco de dados
+ *     security:
+ *       - bearerAuth: []
  */
-router.post('/external/g1/sync', newsController.syncG1News);
+router.post('/external/g1/sync', requireAuth, newsController.syncG1News);
 
 /**
  * @swagger
@@ -70,7 +78,7 @@ router.post('/external/g1/sync', newsController.syncG1News);
  *       404:
  *         description: Notícia não encontrada
  */
-router.get('/:id', newsController.getNewsById);
+router.get('/:id', validateId('id'), newsController.getNewsById);
 
 /**
  * @swagger
@@ -111,8 +119,14 @@ router.get('/:id', newsController.getNewsById);
  *         description: Notícia criada com sucesso
  *       400:
  *         description: Campos obrigatórios ausentes
+ *       401:
+ *         description: Token ausente ou mal formatado
+ *       403:
+ *         description: Chave de API inválida
+ *     security:
+ *       - bearerAuth: []
  */
-router.post('/', newsController.createNews);
+router.post('/', requireAuth, validateCreateNews, newsController.createNews);
 
 /**
  * @swagger
@@ -144,10 +158,16 @@ router.post('/', newsController.createNews);
  *     responses:
  *       200:
  *         description: Notícia atualizada com sucesso
+ *       401:
+ *         description: Token ausente ou mal formatado
+ *       403:
+ *         description: Chave de API inválida
  *       404:
  *         description: Notícia não encontrada
+ *     security:
+ *       - bearerAuth: []
  */
-router.put('/:id', newsController.updateNews);
+router.put('/:id', requireAuth, validateId('id'), validateUpdateNews, newsController.updateNews);
 
 /**
  * @swagger
@@ -163,9 +183,15 @@ router.put('/:id', newsController.updateNews);
  *     responses:
  *       200:
  *         description: Notícia deletada com sucesso
+ *       401:
+ *         description: Token ausente ou mal formatado
+ *       403:
+ *         description: Chave de API inválida
  *       404:
  *         description: Notícia não encontrada
+ *     security:
+ *       - bearerAuth: []
  */
-router.delete('/:id', newsController.deleteNews);
+router.delete('/:id', requireAuth, validateId('id'), newsController.deleteNews);
 
 module.exports = router;

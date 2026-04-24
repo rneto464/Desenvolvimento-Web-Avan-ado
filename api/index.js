@@ -3,10 +3,19 @@ const cors = require('cors');
 const cron = require('node-cron');
 require('dotenv').config();
 
-const { scrapeAndSyncG1 } = require('./src/integrations/g1ScrapingIntegration');
+const { runScraper } = require('./src/services/scraperService');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Headers de segurança básicos
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0'); // desativa filtro legado; CSP é suficiente
+  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  next();
+});
 
 // CORS aberto para qualquer origem — qualquer frontend pode acoplar
 app.use(cors({
@@ -44,19 +53,22 @@ app.listen(PORT, async () => {
   console.log(`Server API is running. API at http://localhost:${PORT}`);
 
   // Sincronização inicial ao subir o servidor
-  console.log('[CRON] Sincronização inicial iniciada...');
-  scrapeAndSyncG1()
-    .then(r => console.log(`[CRON] Inicial: ${r.insertedArticles} novas notícias inseridas.`))
-    .catch(e => console.error('[CRON] Erro na sincronização inicial:', e.message));
+  console.log('[SCRAPER] Sincronização inicial iniciada em processo filho...');
+  runScraper()
+    .then(r => {
+      if (r.skipped) console.log(`[SCRAPER] ${r.message}`);
+      else console.log(`[SCRAPER] Inicial: ${r.insertedArticles} novas notícias inseridas.`);
+    })
+    .catch(e => console.error('[SCRAPER] Erro na sincronização inicial:', e.message));
 
   // Agendamento: todo início de hora (0 * * * *)
-  cron.schedule('0 * * * *', async () => {
-    console.log(`[CRON] ${new Date().toLocaleString('pt-BR')} - Sincronizando notícias G1...`);
-    try {
-      const result = await scrapeAndSyncG1();
-      console.log(`[CRON] ${result.insertedArticles} novas notícias inseridas.`);
-    } catch (err) {
-      console.error('[CRON] Erro:', err.message);
-    }
+  cron.schedule('0 * * * *', () => {
+    console.log(`[SCRAPER] ${new Date().toLocaleString('pt-BR')} - Iniciando sincronização em processo filho...`);
+    runScraper()
+      .then(r => {
+        if (r.skipped) console.log(`[SCRAPER] ${r.message}`);
+        else console.log(`[SCRAPER] ${r.insertedArticles} novas notícias inseridas.`);
+      })
+      .catch(err => console.error('[SCRAPER] Erro:', err.message));
   });
 });
