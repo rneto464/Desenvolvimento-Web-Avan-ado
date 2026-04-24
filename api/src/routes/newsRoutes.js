@@ -8,9 +8,22 @@ const newsController = require('../controllers/newsController');
  *   post:
  *     summary: Sincroniza notícias do G1 Maranhão com o banco de dados
  *     description: >
- *       Busca notícias da API interna do G1 (JMTV 1ª Edição) e salva no banco apenas
- *       as que mencionam São Luís, Raposa, Paço do Lumiar ou São José de Ribamar.
+ *       Usa Puppeteer (headless Chrome) para raspar as páginas G1 - JMTV 1ª Edição e
+ *       G1 - Últimas Notícias MA. Extrai artigos de 5 tipos de widget por página
+ *       (feed principal, artigos relacionados, playlists, Mais Lidas e seções agrupadas)
+ *       e aplica auto-scroll para carregar conteúdo lazy-loaded.
+ *
+ *       Distribuição por região — keywords detectadas no título, resumo e URL
+ *       (ordem de prioridade: São José de Ribamar → Paço do Lumiar → Raposa → São Luís).
+ *       Artigos sem cidade explícita são atribuídos a São Luís como fallback.
  *       Notícias já existentes (por URL) não são duplicadas.
+ *
+ *       **Execução automática:** este mesmo robô roda automaticamente a cada hora
+ *       (cron `0 * * * *`) e também na inicialização do servidor. Não é necessário
+ *       chamá-lo manualmente em produção — use-o apenas para forçar uma sincronização
+ *       imediata fora do ciclo agendado.
+ *     tags:
+ *       - Sincronização
  *     responses:
  *       200:
  *         description: Relatório da sincronização
@@ -22,14 +35,20 @@ const newsController = require('../controllers/newsController');
  *                 message:
  *                   type: string
  *                   example: Sincronização G1 finalizada.
+ *                 totalScraped:
+ *                   type: integer
+ *                   description: Total de artigos únicos coletados nas páginas
+ *                   example: 48
  *                 foundArticles:
  *                   type: integer
- *                   example: 3
+ *                   description: Artigos com região detectada prontos para inserção
+ *                   example: 48
  *                 insertedArticles:
  *                   type: integer
- *                   example: 2
+ *                   description: Artigos novos efetivamente inseridos no banco
+ *                   example: 5
  *       500:
- *         description: Erro ao acessar a API do G1 ou o banco de dados
+ *         description: Erro no scraping ou no banco de dados
  */
 router.post('/external/g1/sync', newsController.syncG1News);
 

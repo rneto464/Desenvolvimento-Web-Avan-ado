@@ -2,18 +2,19 @@ const express = require('express');
 const cors = require('cors');
 const cron = require('node-cron');
 require('dotenv').config();
-const path = require('path');
 
 const { scrapeAndSyncG1 } = require('./src/integrations/g1ScrapingIntegration');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use(cors());
+// CORS aberto para qualquer origem — qualquer frontend pode acoplar
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 app.use(express.json());
-
-// Servir frontend estático
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Importação das Rotas
 const regionRoutes = require('./src/routes/regionRoutes');
@@ -24,6 +25,11 @@ const { swaggerUi, swaggerDocs } = require('./src/docs/swagger');
 
 // Swagger route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Health check — qualquer frontend pode usar para verificar se a API está online
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 // Uso das rotas sob o prefixo /api
 app.use('/api/regions', regionRoutes);
