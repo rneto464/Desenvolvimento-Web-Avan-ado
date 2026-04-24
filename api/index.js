@@ -1,14 +1,15 @@
-const express = require('express');
-const cors = require('cors');
-const cron = require('node-cron');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import cron from 'node-cron';
+import 'dotenv/config';
 
-const { scrapeAndSyncG1 } = require('./src/integrations/g1ScrapingIntegration');
-
-// Middlewares de logging
-const requestLogger = require('./src/middlewares/requestLogger');
-const errorHandler  = require('./src/middlewares/errorHandler');
-const logger        = require('./src/middlewares/logger');
+import { scrapeAndSyncG1 } from './src/integrations/g1ScrapingIntegration.js';
+import requestLogger from './src/middlewares/requestLogger.js';
+import errorHandler from './src/middlewares/errorHandler.js';
+import logger from './src/middlewares/logger.js';
+import regionRoutes from './src/routes/regionRoutes.js';
+import newsRoutes from './src/routes/newsRoutes.js';
+import { swaggerUi, swaggerDocs } from './src/docs/swagger.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -23,13 +24,6 @@ app.use(express.json());
 
 // ✅ Log de requisições e respostas — deve vir antes das rotas
 app.use(requestLogger);
-
-// Importação das Rotas
-const regionRoutes = require('./src/routes/regionRoutes');
-const newsRoutes = require('./src/routes/newsRoutes');
-
-// Importação do Swagger
-const { swaggerUi, swaggerDocs } = require('./src/docs/swagger');
 
 // Swagger route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));

@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as regionController from '../controllers/regionController.js';
+
 const router = express.Router();
-const regionController = require('../controllers/regionController');
 
 /**
  * @swagger
@@ -100,4 +101,4 @@ router.get('/:id/data', regionController.getRegionData);
  */
 router.get('/:id/news', regionController.getRegionNews);
 
-module.exports = router;
+export default router;

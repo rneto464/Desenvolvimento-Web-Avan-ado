@@ -1,6 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as newsController from '../controllers/newsController.js';
+
 const router = express.Router();
-const newsController = require('../controllers/newsController');
 
 /**
  * @swagger
@@ -99,15 +100,12 @@ router.get('/', newsController.listNews);
  *                   example: Sincronização G1 finalizada.
  *                 totalScraped:
  *                   type: integer
- *                   description: Total de artigos únicos coletados nas páginas
  *                   example: 48
  *                 foundArticles:
  *                   type: integer
- *                   description: Artigos com região detectada prontos para inserção
  *                   example: 48
  *                 insertedArticles:
  *                   type: integer
- *                   description: Artigos novos efetivamente inseridos no banco
  *                   example: 5
  *       500:
  *         description: Erro no scraping ou no banco de dados
@@ -230,4 +228,4 @@ router.put('/:id', newsController.updateNews);
  */
 router.delete('/:id', newsController.deleteNews);
 
-module.exports = router;
+export default router;

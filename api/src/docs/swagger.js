@@ -1,5 +1,11 @@
-const swaggerJsDoc = require('swagger-jsdoc');
-const swaggerUi = require('swagger-ui-express');
+import swaggerJsDoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// Em ESM, __dirname não existe — precisamos reconstruí-lo
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
 
 const swaggerOptions = {
   swaggerDefinition: {
@@ -40,12 +46,10 @@ Qualquer frontend (React, Vue, Angular, Next.js, etc.) pode consumir esta API di
       ]
     }
   },
-  apis: ['./src/routes/*.js'] // Caminho onde estão os arquivos de rota com as anotações
+  // Caminho absoluto resolvido para compatibilidade com ESM
+  apis: [join(__dirname, '../routes/*.js')]
 };
 
 const swaggerDocs = swaggerJsDoc(swaggerOptions);
 
-module.exports = {
-  swaggerUi,
-  swaggerDocs
-};
+export { swaggerUi, swaggerDocs };

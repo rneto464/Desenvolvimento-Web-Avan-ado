@@ -13,13 +13,6 @@ const LEVELS = {
   error: '\x1b[31mERROR\x1b[0m',  // Vermelho
 };
 
-/**
- * Formata e imprime uma linha de log.
- * @param {'info'|'warn'|'error'} level
- * @param {string} context  Prefixo do contexto (ex: 'REQUEST', 'RESPONSE', 'ERROR')
- * @param {string} message
- * @param {object} [meta]   Dados extras opcionais
- */
 function log(level, context, message, meta) {
   const timestamp = new Date().toISOString();
   const prefix    = `[${timestamp}] ${LEVELS[level] || level} [${context}]`;
@@ -32,8 +25,10 @@ function log(level, context, message, meta) {
   }
 }
 
-module.exports = {
+const logger = {
   info:  (ctx, msg, meta) => log('info',  ctx, msg, meta),
   warn:  (ctx, msg, meta) => log('warn',  ctx, msg, meta),
   error: (ctx, msg, meta) => log('error', ctx, msg, meta),
 };
+
+export default logger;

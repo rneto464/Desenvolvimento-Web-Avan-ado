@@ -1,25 +1,18 @@
 /**
  * errorHandler.js — Middleware de Log de Erros e Tratamento Centralizado
  *
- * Cobre o item do checklist:
- *   ✅ Log de erros — stack trace, rota de origem, status HTTP
+ * ✅ Log de erros — stack trace, rota de origem, status HTTP
  *
- * Deve ser registrado APÓS todas as rotas no index.js:
- *   const errorHandler = require('./src/middlewares/errorHandler');
- *   app.use(errorHandler);
- *
- * Para disparar, qualquer controller/service deve chamar next(err) ou
- * lançar um Error com o campo statusCode opcionalmente definido.
+ * Deve ser registrado APÓS todas as rotas no index.js.
  */
 
-const logger = require('./logger');
+import logger from './logger.js';
 
 // eslint-disable-next-line no-unused-vars
-module.exports = function errorHandler(err, req, res, next) {
+export default function errorHandler(err, req, res, next) {
   const status  = err.statusCode || err.status || 500;
   const message = err.message    || 'Erro interno do servidor.';
 
-  // Log completo com stack apenas em ambiente não-produção
   const meta = {
     method: req.method,
     path:   req.originalUrl,
@@ -39,4 +32,4 @@ module.exports = function errorHandler(err, req, res, next) {
       ? { stack: err.stack.split('\n').slice(0, 5) }
       : {}),
   });
-};
+}

@@ -1,4 +1,4 @@
-const supabase = require('../database/db');
+import supabase from '../database/db.js';
 
 /**
  * Serviço de Regiões — camada de negócio entre controllers e banco de dados.
@@ -8,7 +8,7 @@ const supabase = require('../database/db');
  * Retorna todas as regiões cadastradas (exceto a pseudo-região "all").
  * @returns {Promise<object[]>}
  */
-async function getAllRegions() {
+export async function getAllRegions() {
   const { data, error } = await supabase
     .from('regions')
     .select('*')
@@ -22,7 +22,7 @@ async function getAllRegions() {
  * @param {string} regionId
  * @returns {Promise<object|null>}
  */
-async function getRegionData(regionId) {
+export async function getRegionData(regionId) {
   const { data, error } = await supabase
     .from('socio_data')
     .select('*')
@@ -37,7 +37,7 @@ async function getRegionData(regionId) {
  * @param {string} regionId
  * @returns {Promise<{ region_id: string, articles: object[] }>}
  */
-async function getRegionNews(regionId) {
+export async function getRegionNews(regionId) {
   const { data, error } = await supabase
     .from('news')
     .select('*')
@@ -46,9 +46,3 @@ async function getRegionNews(regionId) {
   if (error) throw error;
   return { region_id: regionId, articles: data || [] };
 }
-
-module.exports = {
-  getAllRegions,
-  getRegionData,
-  getRegionNews,
-};
