@@ -7,6 +7,35 @@ const { scrapeAndSyncG1 } = require('../integrations/g1ScrapingIntegration');
  */
 
 /**
+ * Lista notícias com paginação e filtros opcionais.
+ * @param {{ page?: number, limit?: number, region_id?: string, category?: string }} opts
+ * @returns {Promise<{ data: object[], total: number, page: number, limit: number, totalPages: number }>}
+ */
+async function listNews({ page = 1, limit = 12, region_id, category } = {}) {
+  const from = (page - 1) * limit;
+  const to   = from + limit - 1;
+
+  let query = supabase.from('news').select('*', { count: 'exact' });
+
+  if (region_id) query = query.eq('region_id', region_id);
+  if (category)  query = query.ilike('category', `%${category}%`);
+
+  const { data, error, count } = await query
+    .order('id', { ascending: false })
+    .range(from, to);
+
+  if (error) throw error;
+
+  return {
+    data: data || [],
+    total: count || 0,
+    page,
+    limit,
+    totalPages: Math.ceil((count || 0) / limit),
+  };
+}
+
+/**
  * Busca uma notícia pelo id.
  * @param {number|string} id
  * @returns {Promise<object|null>}
@@ -89,6 +118,7 @@ async function syncG1News() {
 }
 
 module.exports = {
+  listNews,
   getNewsById,
   createNews,
   updateNews,
