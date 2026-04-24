@@ -9,6 +9,7 @@ import errorHandler from './src/middlewares/errorHandler.js';
 import logger from './src/middlewares/logger.js';
 import regionRoutes from './src/routes/regionRoutes.js';
 import newsRoutes from './src/routes/newsRoutes.js';
+import ibgeRoutes from './src/routes/ibgeRoutes.js';
 import { swaggerUi, swaggerDocs } from './src/docs/swagger.js';
 
 const app = express();
@@ -36,6 +37,7 @@ app.get('/api/health', (req, res) => {
 // Uso das rotas sob o prefixo /api
 app.use('/api/regions', regionRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/ibge', ibgeRoutes);
 
 // Tratamento para rota não encontrada
 app.use((req, res) => {

@@ -35,7 +35,7 @@ const router = express.Router();
  *         name: category
  *         schema:
  *           type: string
- *         description: Filtra por categoria (busca parcial, ex: G1)
+ *         description: "Filtra por categoria (busca parcial, ex: G1)"
  *     responses:
  *       200:
  *         description: Lista paginada de notícias
