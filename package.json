@@ -1,8 +1,11 @@
 {
   "name": "upaon-news-manager",
   "version": "1.0.0",
+  "description": "Plataforma de notícias regionais do Maranhão — monolito em camadas (Node.js + Express + Supabase)",
   "scripts": {
-    "install": "cd api && npm install",
-    "dev": "cd api && node index.js"
+    "install:api": "cd api && npm install",
+    "install:front": "cd Front-end && npm install",
+    "dev:api": "cd api && node index.js",
+    "dev:front": "cd Front-end && npm run dev"
   }
 }
