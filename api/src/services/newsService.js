@@ -15,7 +15,7 @@ export async function listNews({ page = 1, limit = 12, region_id, category } = {
   const from = (page - 1) * limit;
   const to   = from + limit - 1;
 
-  let query = supabase.from('news').select('*', { count: 'exact' });
+  let query = publicClient.from('news').select('*', { count: 'exact' });
 
   if (region_id) query = query.eq('region_id', region_id);
   if (category)  query = query.ilike('category', `%${category}%`);
@@ -62,9 +62,19 @@ export async function createNews(payload) {
     throw Object.assign(new Error('region_id, title e content são obrigatórios.'), { statusCode: 400 });
   }
 
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from('news')
-    .insert([{ region_id, category, title, source, timeAgo, summary, url, imageUrl, content }])
+    .insert([{
+      region_id,
+      category:  stripHtml(category),
+      title:     stripHtml(title),
+      source:    stripHtml(source),
+      timeAgo:   stripHtml(timeAgo),
+      summary:   stripHtml(summary),
+      content:   stripHtml(content),
+      url:       safeUrl(url),
+      imageUrl:  safeUrl(imageUrl)
+    }])
     .select('id')
     .maybeSingle();
   if (error) throw error;
@@ -85,7 +95,7 @@ export async function updateNews(id, fields) {
   if (fields.summary  !== undefined) updateData.summary  = fields.summary;
   if (fields.content  !== undefined) updateData.content  = fields.content;
 
-  const { data, error } = await supabase
+  const { data, error } = await adminClient
     .from('news')
     .update(updateData)
     .eq('id', id)

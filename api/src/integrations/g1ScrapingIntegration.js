@@ -142,23 +142,23 @@ export async function scrapeAndSyncG1() {
 
       itemsToInsert.push({
         region_id: regionId,
-        category: 'G1 Maranhão',
-        title: article.title,
-        source: article.source,
-        timeAgo: article.timeAgo,
-        summary: article.summary,
-        url: article.url,
-        imageUrl: article.imageUrl,
-        content: 'Conteúdo disponível no link original.'
+        category:  'G1 Maranhão',
+        title:     stripHtml(article.title),
+        source:    stripHtml(article.source),
+        timeAgo:   stripHtml(article.timeAgo),
+        summary:   stripHtml(article.summary),
+        url:       safeUrl(article.url),
+        imageUrl:  safeUrl(article.imageUrl),
+        content:   'Conteúdo disponível no link original.'
       });
     }
 
     let insertedCount = 0;
     for (const item of itemsToInsert) {
       if (!item.url) continue;
-      const { data: existing } = await supabase.from('news').select('id').eq('url', item.url).maybeSingle();
+      const { data: existing } = await publicClient.from('news').select('id').eq('url', item.url).maybeSingle();
       if (!existing) {
-        const { error } = await supabase.from('news').insert([item]);
+        const { error } = await adminClient.from('news').insert([item]);
         if (!error) insertedCount++;
       }
     }

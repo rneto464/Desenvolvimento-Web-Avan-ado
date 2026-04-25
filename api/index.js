@@ -15,6 +15,15 @@ import { swaggerUi, swaggerDocs } from './src/docs/swagger.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Headers de segurança básicos
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '0'); // desativa filtro legado; CSP é suficiente
+  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  next();
+});
+
 // CORS aberto para qualquer origem — qualquer frontend pode acoplar
 app.use(cors({
   origin: '*',

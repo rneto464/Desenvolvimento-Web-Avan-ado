@@ -49,7 +49,7 @@ router.get('/', regionController.getAllRegions);
  *       404:
  *         description: Dados não encontrados para esta região
  */
-router.get('/:id/data', regionController.getRegionData);
+router.get('/:id/data', validateRegionId(), regionController.getRegionData);
 
 /**
  * @swagger
@@ -66,9 +66,22 @@ router.get('/:id/data', regionController.getRegionData);
  *         schema:
  *           type: string
  *         description: "ID da região (1=São Luís, 2=Raposa, 3=Paço do Lumiar, 4=São José de Ribamar, all=Todas)"
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Página (começa em 1)
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *           maximum: 100
+ *         description: Itens por página (máx 100)
  *     responses:
  *       200:
- *         description: Lista de notícias da região (pode ser array vazio)
+ *         description: Página de notícias da região
  *         content:
  *           application/json:
  *             schema:
@@ -77,28 +90,22 @@ router.get('/:id/data', regionController.getRegionData);
  *                 region_id:
  *                   type: string
  *                   example: "2"
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 20
+ *                 total:
+ *                   type: integer
+ *                   example: 142
  *                 articles:
  *                   type: array
  *                   items:
  *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       title:
- *                         type: string
- *                       summary:
- *                         type: string
- *                       source:
- *                         type: string
- *                       timeAgo:
- *                         type: string
- *                       url:
- *                         type: string
- *                       imageUrl:
- *                         type: string
- *                       category:
- *                         type: string
+ *       400:
+ *         description: Parâmetros inválidos
  */
-router.get('/:id/news', regionController.getRegionNews);
+router.get('/:id/news', validateRegionId({ allowAll: true }), validatePagination, regionController.getRegionNews);
 
 export default router;

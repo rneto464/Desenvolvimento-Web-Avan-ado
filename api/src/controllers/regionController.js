@@ -21,7 +21,8 @@ export async function getRegionData(req, res) {
 
 export async function getRegionNews(req, res) {
   try {
-    const result = await regionService.getRegionNews(req.params.id);
+    const { page, limit } = req.pagination || {};
+    const result = await regionService.getRegionNews(req.params.id, { page, limit });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });

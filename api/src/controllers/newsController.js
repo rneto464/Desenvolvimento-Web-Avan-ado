@@ -56,7 +56,8 @@ export async function deleteNews(req, res) {
 export async function syncG1News(req, res) {
   try {
     const result = await newsService.syncG1News();
-    res.status(200).json(result);
+    const status = result.skipped ? 202 : 200;
+    res.status(status).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

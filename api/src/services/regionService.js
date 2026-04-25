@@ -33,16 +33,22 @@ export async function getRegionData(regionId) {
 }
 
 /**
- * Retorna as notícias de uma região ordenadas do mais recente.
+ * Retorna as notícias de uma região com paginação.
  * @param {string} regionId
- * @returns {Promise<{ region_id: string, articles: object[] }>}
+ * @param {{ page?: number, limit?: number }} opts
+ * @returns {Promise<{ region_id: string, page: number, limit: number, total: number, articles: object[] }>}
  */
 export async function getRegionNews(regionId) {
   const { data, error } = await supabase
     .from('news')
-    .select('*')
-    .eq('region_id', regionId)
-    .order('id', { ascending: false });
+    .select('*', { count: 'exact' })
+    .order('id', { ascending: false })
+    .range(from, to);
+
+  if (regionId !== 'all') query = query.eq('region_id', regionId);
+
+  const { data, count, error } = await query;
   if (error) throw error;
-  return { region_id: regionId, articles: data || [] };
+
+  return { region_id: regionId, page, limit, total: count ?? 0, articles: data || [] };
 }
