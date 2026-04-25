@@ -1,5 +1,19 @@
 const newsService = require('../services/newsService');
 
+exports.listNews = async (req, res) => {
+  try {
+    const page      = parseInt(req.query.page)  || 1;
+    const limit     = parseInt(req.query.limit) || 12;
+    const region_id = req.query.region_id || undefined;
+    const category  = req.query.category  || undefined;
+
+    const result = await newsService.listNews({ page, limit, region_id, category });
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
 exports.getNewsById = async (req, res) => {
   try {
     const data = await newsService.getNewsById(req.params.id);
