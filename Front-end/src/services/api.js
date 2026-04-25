@@ -18,52 +18,96 @@ api.interceptors.response.use(
   }
 );
 
+// --------------------------------------------------------------------------
+// Regiões — /api/regions
+// --------------------------------------------------------------------------
+export const regionsService = {
+  /**
+   * Lista todas as regiões disponíveis
+   * (São Luís, Raposa, Paço do Lumiar, São José de Ribamar)
+   */
+  getAll: async () => {
+    const response = await api.get('/regions');
+    return response.data;
+  },
+
+  /**
+   * Retorna dados socioeconômicos de uma região pelo id
+   * @param {string} id  — "1" | "2" | "3" | "4" | "all"
+   */
+  getData: async (id) => {
+    const response = await api.get(`/regions/${id}/data`);
+    return response.data;
+  },
+
+  /**
+   * Retorna as notícias de uma região pelo id
+   * @param {string} id  — "1" | "2" | "3" | "4" | "all"
+   */
+  getNews: async (id) => {
+    const response = await api.get(`/regions/${id}/news`);
+    return response.data; // { region_id, articles: [] }
+  },
+};
+
+// --------------------------------------------------------------------------
+// Notícias — /api/news
+// --------------------------------------------------------------------------
 export const newsService = {
-  getAllNews: async (page = 1, limit = 12) => {
-    try {
-      const response = await api.get('/noticias', { params: { page, limit } });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * Busca uma notícia pelo id
+   * @param {number|string} id
+   */
+  getById: async (id) => {
+    const response = await api.get(`/news/${id}`);
+    return response.data;
   },
 
-  getNewsById: async (id) => {
-    try {
-      const response = await api.get(`/noticias/${id}`);
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * Cria uma notícia manualmente
+   * @param {{ region_id, title, content, category?, source?, summary?, url?, imageUrl? }} payload
+   */
+  create: async (payload) => {
+    const response = await api.post('/news', payload);
+    return response.data;
   },
 
-  searchNews: async (query) => {
-    try {
-      const response = await api.get('/noticias/search', { params: { q: query } });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * Atualiza uma notícia existente
+   * @param {number|string} id
+   * @param {{ category?, title?, source?, summary?, content? }} payload
+   */
+  update: async (id, payload) => {
+    const response = await api.put(`/news/${id}`, payload);
+    return response.data;
   },
 
-  getCategories: async () => {
-    try {
-      const response = await api.get('/categorias');
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * Remove uma notícia pelo id
+   * @param {number|string} id
+   */
+  remove: async (id) => {
+    const response = await api.delete(`/news/${id}`);
+    return response.data;
   },
 
-  getNewsByCategory: async (categoryId, page = 1, limit = 12) => {
-    try {
-      const response = await api.get(`/noticias/categoria/${categoryId}`, {
-        params: { page, limit },
-      });
-      return response.data;
-    } catch (error) {
-      throw error;
-    }
+  /**
+   * Força sincronização manual com o G1 Maranhão (Puppeteer)
+   * Em produção, o cron executa automaticamente a cada hora.
+   */
+  syncG1: async () => {
+    const response = await api.post('/news/external/g1/sync');
+    return response.data;
+  },
+};
+
+// --------------------------------------------------------------------------
+// Health check — /api/health
+// --------------------------------------------------------------------------
+export const healthService = {
+  check: async () => {
+    const response = await api.get('/health');
+    return response.data; // { status: 'ok', timestamp }
   },
 };
 
