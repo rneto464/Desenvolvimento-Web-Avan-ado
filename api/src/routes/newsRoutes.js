@@ -6,6 +6,68 @@ const { validateId, validateCreateNews, validateUpdateNews } = require('../middl
 
 /**
  * @swagger
+ * /api/news:
+ *   get:
+ *     summary: Lista todas as notícias com paginação e filtros
+ *     description: >
+ *       Retorna notícias paginadas ordenadas da mais recente para a mais antiga.
+ *       Filtre por região ou categoria via query string.
+ *     tags:
+ *       - Notícias
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Número da página
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 12
+ *         description: Itens por página (máx. recomendado 50)
+ *       - in: query
+ *         name: region_id
+ *         schema:
+ *           type: string
+ *         description: "Filtra por região (1=São Luís, 2=Raposa, 3=Paço do Lumiar, 4=São José de Ribamar)"
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *         description: Filtra por categoria (busca parcial, ex: G1)
+ *     responses:
+ *       200:
+ *         description: Lista paginada de notícias
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                 total:
+ *                   type: integer
+ *                   example: 120
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 12
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 10
+ *       500:
+ *         description: Erro no banco de dados
+ */
+router.get('/', newsController.listNews);
+
+/**
+ * @swagger
  * /api/news/external/g1/sync:
  *   post:
  *     summary: Sincroniza notícias do G1 Maranhão com o banco de dados

@@ -1,84 +1,64 @@
-const { publicClient, adminClient } = require('../database/db');
-const { runScraper } = require('../services/scraperService');
-const { stripHtml, safeUrl } = require('../utils/sanitize');
+const newsService = require('../services/newsService');
 
-exports.getNewsById = async (req, res) => {
-  const newsId = req.params.id;
+exports.listNews = async (req, res) => {
   try {
-    const { data, error } = await publicClient.from('news').select('*').eq('id', newsId).maybeSingle();
-    if (error) throw error;
-    if (data) {
-      res.json(data);
-    } else {
-      res.status(404).json({ error: 'Notícia não encontrada.' });
-    }
+    const page      = parseInt(req.query.page)  || 1;
+    const limit     = parseInt(req.query.limit) || 12;
+    const region_id = req.query.region_id || undefined;
+    const category  = req.query.category  || undefined;
+
+    const result = await newsService.listNews({ page, limit, region_id, category });
+    res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+};
+
+exports.getNewsById = async (req, res) => {
+  try {
+    const data = await newsService.getNewsById(req.params.id);
+    if (!data) return res.status(404).json({ error: 'Notícia não encontrada.' });
+    res.json(data);
+  } catch (err) {
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 };
 
 exports.createNews = async (req, res) => {
-  const { region_id, category, title, source, timeAgo, summary, url, imageUrl, content } = req.body;
-  if (!region_id || !title || !content) {
-    return res.status(400).json({ error: 'region_id, title e content são obrigatórios.' });
-  }
   try {
-    const { data, error } = await adminClient.from('news').insert([{
-      region_id,
-      category:  stripHtml(category),
-      title:     stripHtml(title),
-      source:    stripHtml(source),
-      timeAgo:   stripHtml(timeAgo),
-      summary:   stripHtml(summary),
-      content:   stripHtml(content),
-      url:       safeUrl(url),
-      imageUrl:  safeUrl(imageUrl)
-    }]).select('id').maybeSingle();
-    if (error) throw error;
-    res.status(201).json({ message: 'Notícia criada com sucesso', id: data?.id });
+    const result = await newsService.createNews(req.body);
+    res.status(201).json({ message: 'Notícia criada com sucesso', ...result });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 };
 
 exports.updateNews = async (req, res) => {
-  const newsId = req.params.id;
-  const { category, title, source, summary, content } = req.body;
   try {
-    const updateData = {};
-    if (category !== undefined) updateData.category = stripHtml(category);
-    if (title !== undefined)    updateData.title    = stripHtml(title);
-    if (source !== undefined)   updateData.source   = stripHtml(source);
-    if (summary !== undefined)  updateData.summary  = stripHtml(summary);
-    if (content !== undefined)  updateData.content  = stripHtml(content);
-
-    const { data, error } = await adminClient.from('news').update(updateData).eq('id', newsId).select('id');
-    if (error) throw error;
-    if (!data || data.length === 0) return res.status(404).json({ error: 'Notícia não encontrada.' });
+    const updated = await newsService.updateNews(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ error: 'Notícia não encontrada.' });
     res.json({ message: 'Notícia atualizada com sucesso.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 };
 
 exports.deleteNews = async (req, res) => {
-  const newsId = req.params.id;
   try {
-    const { data, error } = await adminClient.from('news').delete().eq('id', newsId).select('id');
-    if (error) throw error;
-    if (!data || data.length === 0) return res.status(404).json({ error: 'Notícia não encontrada para deletar.' });
+    const deleted = await newsService.deleteNews(req.params.id);
+    if (!deleted) return res.status(404).json({ error: 'Notícia não encontrada para deletar.' });
     res.json({ message: 'Notícia deletada com sucesso.' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(err.statusCode || 500).json({ error: err.message });
   }
 };
 
 exports.syncG1News = async (req, res) => {
   try {
-    const result = await runScraper();
+    const result = await newsService.syncG1News();
     const status = result.skipped ? 202 : 200;
     res.status(status).json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
