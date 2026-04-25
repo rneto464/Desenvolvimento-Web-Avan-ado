@@ -7,5 +7,9 @@
     "install:front": "cd Front-end && npm install",
     "dev:api": "cd api && node index.js",
     "dev:front": "cd Front-end && npm run dev"
+  },
+  "dependencies": {
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1"
   }
 }
