@@ -1,16 +1,16 @@
-const https = require('https');
+import { get } from 'https';
 
 /**
  * Função responsável por integrar com a API de notícias do IBGE
  * e retornar entre 3 e 5 notícias mais recentes.
  */
-function fetchLatestNews(limit = 5) {
+export function fetchLatestNews(limit = 5) {
   return new Promise((resolve, reject) => {
     // Garantir que limitamos de 3 a 5 conforme especificado
     const qtd = Math.max(3, Math.min(limit, 5));
     const url = `https://servicodados.ibge.gov.br/api/v3/noticias/?qtd=${qtd}`;
 
-    https.get(url, (res) => {
+    get(url, (res) => {
       let data = '';
 
       // Recebendo os chunks de dados
@@ -32,7 +32,3 @@ function fetchLatestNews(limit = 5) {
     });
   });
 }
-
-module.exports = {
-  fetchLatestNews
-};

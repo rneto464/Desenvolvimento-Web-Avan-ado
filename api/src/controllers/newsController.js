@@ -1,6 +1,6 @@
-const newsService = require('../services/newsService');
+import * as newsService from '../services/newsService.js';
 
-exports.listNews = async (req, res) => {
+export async function listNews(req, res) {
   try {
     const page      = parseInt(req.query.page)  || 1;
     const limit     = parseInt(req.query.limit) || 12;
@@ -12,9 +12,9 @@ exports.listNews = async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+}
 
-exports.getNewsById = async (req, res) => {
+export async function getNewsById(req, res) {
   try {
     const data = await newsService.getNewsById(req.params.id);
     if (!data) return res.status(404).json({ error: 'Notícia não encontrada.' });
@@ -22,18 +22,18 @@ exports.getNewsById = async (req, res) => {
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }
-};
+}
 
-exports.createNews = async (req, res) => {
+export async function createNews(req, res) {
   try {
     const result = await newsService.createNews(req.body);
     res.status(201).json({ message: 'Notícia criada com sucesso', ...result });
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }
-};
+}
 
-exports.updateNews = async (req, res) => {
+export async function updateNews(req, res) {
   try {
     const updated = await newsService.updateNews(req.params.id, req.body);
     if (!updated) return res.status(404).json({ error: 'Notícia não encontrada.' });
@@ -41,9 +41,9 @@ exports.updateNews = async (req, res) => {
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }
-};
+}
 
-exports.deleteNews = async (req, res) => {
+export async function deleteNews(req, res) {
   try {
     const deleted = await newsService.deleteNews(req.params.id);
     if (!deleted) return res.status(404).json({ error: 'Notícia não encontrada para deletar.' });
@@ -51,13 +51,13 @@ exports.deleteNews = async (req, res) => {
   } catch (err) {
     res.status(err.statusCode || 500).json({ error: err.message });
   }
-};
+}
 
-exports.syncG1News = async (req, res) => {
+export async function syncG1News(req, res) {
   try {
     const result = await newsService.syncG1News();
     res.status(200).json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-};
+}
