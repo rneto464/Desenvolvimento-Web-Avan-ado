@@ -1,7 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as regionController from '../controllers/regionController.js';
+
 const router = express.Router();
-const regionController = require('../controllers/regionController');
-const { validateRegionId, validatePagination } = require('../middleware/validate');
 
 /**
  * @swagger
@@ -108,4 +108,4 @@ router.get('/:id/data', validateRegionId(), regionController.getRegionData);
  */
 router.get('/:id/news', validateRegionId({ allowAll: true }), validatePagination, regionController.getRegionNews);
 
-module.exports = router;
+export default router;

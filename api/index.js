@@ -1,9 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const cron = require('node-cron');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import cron from 'node-cron';
+import 'dotenv/config';
 
-const { runScraper } = require('./src/services/scraperService');
+import { scrapeAndSyncG1 } from './src/integrations/g1ScrapingIntegration.js';
+import requestLogger from './src/middlewares/requestLogger.js';
+import errorHandler from './src/middlewares/errorHandler.js';
+import logger from './src/middlewares/logger.js';
+import regionRoutes from './src/routes/regionRoutes.js';
+import newsRoutes from './src/routes/newsRoutes.js';
+import ibgeRoutes from './src/routes/ibgeRoutes.js';
+import { swaggerUi, swaggerDocs } from './src/docs/swagger.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -25,12 +32,8 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Importação das Rotas
-const regionRoutes = require('./src/routes/regionRoutes');
-const newsRoutes = require('./src/routes/newsRoutes');
-
-// Importação do Swagger
-const { swaggerUi, swaggerDocs } = require('./src/docs/swagger');
+// ✅ Log de requisições e respostas — deve vir antes das rotas
+app.use(requestLogger);
 
 // Swagger route
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
@@ -43,32 +46,33 @@ app.get('/api/health', (req, res) => {
 // Uso das rotas sob o prefixo /api
 app.use('/api/regions', regionRoutes);
 app.use('/api/news', newsRoutes);
+app.use('/api/ibge', ibgeRoutes);
 
 // Tratamento para rota não encontrada
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint não encontrado.' });
 });
 
+// ✅ Log de erros — deve ser o último middleware (4 argumentos obrigatórios)
+app.use(errorHandler);
+
 app.listen(PORT, async () => {
-  console.log(`Server API is running. API at http://localhost:${PORT}`);
+  logger.info('SERVER', `API rodando em http://localhost:${PORT}`);
 
   // Sincronização inicial ao subir o servidor
-  console.log('[SCRAPER] Sincronização inicial iniciada em processo filho...');
-  runScraper()
-    .then(r => {
-      if (r.skipped) console.log(`[SCRAPER] ${r.message}`);
-      else console.log(`[SCRAPER] Inicial: ${r.insertedArticles} novas notícias inseridas.`);
-    })
-    .catch(e => console.error('[SCRAPER] Erro na sincronização inicial:', e.message));
+  logger.info('CRON', 'Sincronização inicial iniciada...');
+  scrapeAndSyncG1()
+    .then(r => logger.info('CRON', `Inicial: ${r.insertedArticles} novas notícias inseridas.`))
+    .catch(e => logger.error('CRON', `Erro na sincronização inicial: ${e.message}`));
 
   // Agendamento: todo início de hora (0 * * * *)
-  cron.schedule('0 * * * *', () => {
-    console.log(`[SCRAPER] ${new Date().toLocaleString('pt-BR')} - Iniciando sincronização em processo filho...`);
-    runScraper()
-      .then(r => {
-        if (r.skipped) console.log(`[SCRAPER] ${r.message}`);
-        else console.log(`[SCRAPER] ${r.insertedArticles} novas notícias inseridas.`);
-      })
-      .catch(err => console.error('[SCRAPER] Erro:', err.message));
+  cron.schedule('0 * * * *', async () => {
+    logger.info('CRON', `${new Date().toLocaleString('pt-BR')} - Sincronizando notícias G1...`);
+    try {
+      const result = await scrapeAndSyncG1();
+      logger.info('CRON', `${result.insertedArticles} novas notícias inseridas.`);
+    } catch (err) {
+      logger.error('CRON', `Erro: ${err.message}`);
+    }
   });
 });

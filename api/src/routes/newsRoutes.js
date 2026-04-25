@@ -1,8 +1,7 @@
-const express = require('express');
+import express from 'express';
+import * as newsController from '../controllers/newsController.js';
+
 const router = express.Router();
-const newsController = require('../controllers/newsController');
-const requireAuth = require('../middleware/auth');
-const { validateId, validateCreateNews, validateUpdateNews } = require('../middleware/validate');
 
 /**
  * @swagger
@@ -36,7 +35,7 @@ const { validateId, validateCreateNews, validateUpdateNews } = require('../middl
  *         name: category
  *         schema:
  *           type: string
- *         description: Filtra por categoria (busca parcial, ex: G1)
+ *         description: "Filtra por categoria (busca parcial, ex: G1)"
  *     responses:
  *       200:
  *         description: Lista paginada de notícias
@@ -101,15 +100,12 @@ router.get('/', newsController.listNews);
  *                   example: Sincronização G1 finalizada.
  *                 totalScraped:
  *                   type: integer
- *                   description: Total de artigos únicos coletados nas páginas
  *                   example: 48
  *                 foundArticles:
  *                   type: integer
- *                   description: Artigos com região detectada prontos para inserção
  *                   example: 48
  *                 insertedArticles:
  *                   type: integer
- *                   description: Artigos novos efetivamente inseridos no banco
  *                   example: 5
  *       401:
  *         description: Token ausente ou mal formatado
@@ -256,4 +252,4 @@ router.put('/:id', requireAuth, validateId('id'), validateUpdateNews, newsContro
  */
 router.delete('/:id', requireAuth, validateId('id'), newsController.deleteNews);
 
-module.exports = router;
+export default router;

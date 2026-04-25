@@ -1,6 +1,5 @@
-const { publicClient, adminClient } = require('../database/db');
-const { runScraper } = require('./scraperService');
-const { stripHtml, safeUrl } = require('../utils/sanitize');
+import supabase from '../database/db.js';
+import { scrapeAndSyncG1 } from '../integrations/g1ScrapingIntegration.js';
 
 /**
  * Serviço de Notícias — camada de negócio entre controllers e banco de dados.
@@ -12,7 +11,7 @@ const { stripHtml, safeUrl } = require('../utils/sanitize');
  * @param {{ page?: number, limit?: number, region_id?: string, category?: string }} opts
  * @returns {Promise<{ data: object[], total: number, page: number, limit: number, totalPages: number }>}
  */
-async function listNews({ page = 1, limit = 12, region_id, category } = {}) {
+export async function listNews({ page = 1, limit = 12, region_id, category } = {}) {
   const from = (page - 1) * limit;
   const to   = from + limit - 1;
 
@@ -41,8 +40,8 @@ async function listNews({ page = 1, limit = 12, region_id, category } = {}) {
  * @param {number|string} id
  * @returns {Promise<object|null>}
  */
-async function getNewsById(id) {
-  const { data, error } = await publicClient
+export async function getNewsById(id) {
+  const { data, error } = await supabase
     .from('news')
     .select('*')
     .eq('id', id)
@@ -56,7 +55,7 @@ async function getNewsById(id) {
  * @param {{ region_id, title, content, category?, source?, timeAgo?, summary?, url?, imageUrl? }} payload
  * @returns {Promise<{ id: number }>}
  */
-async function createNews(payload) {
+export async function createNews(payload) {
   const { region_id, category, title, source, timeAgo, summary, url, imageUrl, content } = payload;
 
   if (!region_id || !title || !content) {
@@ -88,13 +87,13 @@ async function createNews(payload) {
  * @param {{ category?, title?, source?, summary?, content? }} fields
  * @returns {Promise<boolean>} true se encontrada e atualizada
  */
-async function updateNews(id, fields) {
+export async function updateNews(id, fields) {
   const updateData = {};
-  if (fields.category !== undefined) updateData.category = stripHtml(fields.category);
-  if (fields.title !== undefined)    updateData.title    = stripHtml(fields.title);
-  if (fields.source !== undefined)   updateData.source   = stripHtml(fields.source);
-  if (fields.summary !== undefined)  updateData.summary  = stripHtml(fields.summary);
-  if (fields.content !== undefined)  updateData.content  = stripHtml(fields.content);
+  if (fields.category !== undefined) updateData.category = fields.category;
+  if (fields.title    !== undefined) updateData.title    = fields.title;
+  if (fields.source   !== undefined) updateData.source   = fields.source;
+  if (fields.summary  !== undefined) updateData.summary  = fields.summary;
+  if (fields.content  !== undefined) updateData.content  = fields.content;
 
   const { data, error } = await adminClient
     .from('news')
@@ -110,8 +109,8 @@ async function updateNews(id, fields) {
  * @param {number|string} id
  * @returns {Promise<boolean>} true se encontrada e deletada
  */
-async function deleteNews(id) {
-  const { data, error } = await adminClient
+export async function deleteNews(id) {
+  const { data, error } = await supabase
     .from('news')
     .delete()
     .eq('id', id)
@@ -124,15 +123,6 @@ async function deleteNews(id) {
  * Dispara a sincronização com o G1 Maranhão via Puppeteer.
  * @returns {Promise<{ message, totalScraped, foundArticles, insertedArticles }>}
  */
-async function syncG1News() {
-  return runScraper();
+export async function syncG1News() {
+  return scrapeAndSyncG1();
 }
-
-module.exports = {
-  listNews,
-  getNewsById,
-  createNews,
-  updateNews,
-  deleteNews,
-  syncG1News,
-};

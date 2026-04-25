@@ -1,4 +1,4 @@
-const { publicClient } = require('../database/db');
+import supabase from '../database/db.js';
 
 /**
  * Serviço de Regiões — camada de negócio entre controllers e banco de dados.
@@ -8,8 +8,8 @@ const { publicClient } = require('../database/db');
  * Retorna todas as regiões cadastradas (exceto a pseudo-região "all").
  * @returns {Promise<object[]>}
  */
-async function getAllRegions() {
-  const { data, error } = await publicClient
+export async function getAllRegions() {
+  const { data, error } = await supabase
     .from('regions')
     .select('*')
     .neq('id', 'all');
@@ -22,8 +22,8 @@ async function getAllRegions() {
  * @param {string} regionId
  * @returns {Promise<object|null>}
  */
-async function getRegionData(regionId) {
-  const { data, error } = await publicClient
+export async function getRegionData(regionId) {
+  const { data, error } = await supabase
     .from('socio_data')
     .select('*')
     .eq('region_id', regionId)
@@ -38,11 +38,8 @@ async function getRegionData(regionId) {
  * @param {{ page?: number, limit?: number }} opts
  * @returns {Promise<{ region_id: string, page: number, limit: number, total: number, articles: object[] }>}
  */
-async function getRegionNews(regionId, { page = 1, limit = 12 } = {}) {
-  const from = (page - 1) * limit;
-  const to   = from + limit - 1;
-
-  let query = publicClient
+export async function getRegionNews(regionId) {
+  const { data, error } = await supabase
     .from('news')
     .select('*', { count: 'exact' })
     .order('id', { ascending: false })
@@ -55,9 +52,3 @@ async function getRegionNews(regionId, { page = 1, limit = 12 } = {}) {
 
   return { region_id: regionId, page, limit, total: count ?? 0, articles: data || [] };
 }
-
-module.exports = {
-  getAllRegions,
-  getRegionData,
-  getRegionNews,
-};

@@ -1,6 +1,5 @@
-const puppeteer = require('puppeteer');
-const { publicClient, adminClient } = require('../database/db');
-const { stripHtml, safeUrl } = require('../utils/sanitize');
+import puppeteer from 'puppeteer';
+import supabase from '../database/db.js';
 
 const G1_PAGES = [
   { url: 'https://g1.globo.com/ma/maranhao/videos-jmtv-1-edicao/', source: 'G1 - JMTV 1ª Edição' },
@@ -112,7 +111,7 @@ async function scrapePage(page, pageUrl, source) {
   }
 }
 
-async function scrapeAndSyncG1() {
+export async function scrapeAndSyncG1() {
   const browser = await puppeteer.launch({
     headless: true,
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
@@ -175,5 +174,3 @@ async function scrapeAndSyncG1() {
     await browser.close();
   }
 }
-
-module.exports = { scrapeAndSyncG1 };
