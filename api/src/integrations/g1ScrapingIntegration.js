@@ -1,28 +1,11 @@
 import puppeteer from 'puppeteer';
 import supabase from '../database/db.js';
+import { detectRegion } from '../utils/regionDetector.js';
 
 const G1_PAGES = [
   { url: 'https://g1.globo.com/ma/maranhao/videos-jmtv-1-edicao/', source: 'G1 - JMTV 1ª Edição' },
   { url: 'https://g1.globo.com/ma/maranhao/ultimas-noticias/', source: 'G1 - Últimas Notícias MA' }
 ];
-
-// Ordem importa: cidades mais específicas primeiro para evitar falso match com São Luís
-const REGIONS_MAP = [
-  { regionId: '4', keywords: ['são josé de ribamar', 'sao jose de ribamar', 'sao-jose-de-ribamar', 'são jose de ribamar', 'sao josé de ribamar', 'ribamar'] },
-  { regionId: '3', keywords: ['paço do lumiar', 'paco do lumiar', 'paco-do-lumiar', 'paço-do-lumiar'] },
-  { regionId: '2', keywords: ['raposa'] },
-  { regionId: '1', keywords: ['são luís', 'sao luis', 'são luis', 'sao luís', 'sao-luis', 'são-luís'] }
-];
-
-function detectRegion(text) {
-  const lower = text.toLowerCase();
-  for (const region of REGIONS_MAP) {
-    if (region.keywords.some(kw => lower.includes(kw))) {
-      return region.regionId;
-    }
-  }
-  return '1'; // fallback: São Luís (cobertura geral do MA)
-}
 
 async function autoScroll(page) {
   await page.evaluate(async () => {
@@ -156,9 +139,9 @@ export async function scrapeAndSyncG1() {
     let insertedCount = 0;
     for (const item of itemsToInsert) {
       if (!item.url) continue;
-      const { data: existing } = await publicClient.from('news').select('id').eq('url', item.url).maybeSingle();
+      const { data: existing } = await supabase.from('news').select('id').eq('url', item.url).maybeSingle();
       if (!existing) {
-        const { error } = await adminClient.from('news').insert([item]);
+        const { error } = await supabase.from('news').insert([item]);
         if (!error) insertedCount++;
       }
     }
