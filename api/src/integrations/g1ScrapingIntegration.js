@@ -1,5 +1,6 @@
 import puppeteer from 'puppeteer';
-import supabase from '../database/db.js';
+import { publicClient, adminClient } from '../database/db.js';
+import { stripHtml, safeUrl } from '../utils/sanitize.js';
 
 const G1_PAGES = [
   { url: 'https://g1.globo.com/ma/maranhao/videos-jmtv-1-edicao/', source: 'G1 - JMTV 1ª Edição' },

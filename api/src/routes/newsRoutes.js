@@ -1,5 +1,27 @@
 import express from 'express';
 import * as newsController from '../controllers/newsController.js';
+import requireAuth from '../middlewares/requireAuth.js';
+
+function validateId(param) {
+  return (req, res, next) => {
+    const val = parseInt(req.params[param], 10);
+    if (isNaN(val) || val < 1) return res.status(400).json({ error: `Parâmetro "${param}" deve ser um inteiro positivo.` });
+    next();
+  };
+}
+
+function validateCreateNews(req, res, next) {
+  const { title, source, region_id } = req.body;
+  if (!title || !source || !region_id) return res.status(400).json({ error: 'Campos obrigatórios: title, source, region_id.' });
+  next();
+}
+
+function validateUpdateNews(req, res, next) {
+  const allowed = ['category', 'title', 'source', 'summary', 'content'];
+  const hasValid = allowed.some(k => req.body[k] !== undefined);
+  if (!hasValid) return res.status(400).json({ error: `Envie ao menos um campo para atualizar: ${allowed.join(', ')}.` });
+  next();
+}
 
 const router = express.Router();
 

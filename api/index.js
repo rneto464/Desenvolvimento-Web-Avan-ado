@@ -15,12 +15,16 @@ import { swaggerUi, swaggerDocs } from './src/docs/swagger.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Headers de segurança básicos
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Headers de segurança — CSP aplicado apenas fora do /api-docs
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '0'); // desativa filtro legado; CSP é suficiente
-  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  res.setHeader('X-XSS-Protection', '0');
+  if (!req.originalUrl.startsWith('/api-docs')) {
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+  }
   next();
 });
 
@@ -34,9 +38,6 @@ app.use(express.json());
 
 // ✅ Log de requisições e respostas — deve vir antes das rotas
 app.use(requestLogger);
-
-// Swagger route
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Health check — qualquer frontend pode usar para verificar se a API está online
 app.get('/api/health', (req, res) => {
