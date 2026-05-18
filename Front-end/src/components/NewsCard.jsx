@@ -1,8 +1,18 @@
 import { Link } from 'react-router-dom';
-import { Clock, Tag } from 'lucide-react';
+import { Clock, Tag, Bookmark, BookmarkCheck } from 'lucide-react';
+import { useReadlistContext } from '../context/ReadlistContext';
 
-export default function NewsCard({ id, title, summary, image, date, category }) {
+export default function NewsCard({ id, title, summary, image, date, category, timeAgo }) {
   const formattedDate = date ? new Date(date).toLocaleDateString('pt-BR') : '';
+  const { add, remove, isAdded } = useReadlistContext();
+  const saved = isAdded(id);
+
+  function handleReadlist(e) {
+    e.preventDefault();
+    saved
+      ? remove(id)
+      : add({ id, title, summary, imageUrl: image, category, timeAgo });
+  }
 
   return (
     <Link to={`/noticias/${id}`}>
@@ -26,6 +36,17 @@ export default function NewsCard({ id, title, summary, image, date, category }) 
               {category}
             </div>
           )}
+          <button
+            onClick={handleReadlist}
+            title={saved ? 'Remover da lista' : 'Ler depois'}
+            className={`absolute top-3 left-3 p-1.5 rounded-full shadow-lg transition-colors ${
+              saved
+                ? 'bg-sao-luis-purple text-white'
+                : 'bg-white/80 text-gray-500 hover:bg-white hover:text-sao-luis-purple'
+            }`}
+          >
+            {saved ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}
+          </button>
         </div>
 
         <div className="p-4 sm:p-5 flex flex-col h-40">

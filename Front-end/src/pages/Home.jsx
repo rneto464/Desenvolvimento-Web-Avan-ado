@@ -1,43 +1,47 @@
 import { useState, useEffect } from 'react';
 import NewsCard from '../components/NewsCard';
-import SearchBar from '../components/SearchBar';
-import CategoryFilter from '../components/CategoryFilter';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { newsService } from '../services/api';
-import { useFetch } from '../hooks/useFetch';
+
+const REGIONS = [
+  { id: '', label: 'Todas as Regiões' },
+  { id: '1', label: 'São Luís' },
+  { id: '2', label: 'Raposa' },
+  { id: '3', label: 'Paço do Lumiar' },
+  { id: '4', label: 'São José de Ribamar' },
+];
+
+const NEWS_PER_PAGE = 12;
 
 export default function Home() {
   const [news, setNews] = useState([]);
-  const [filteredNews, setFilteredNews] = useState([]);
+  const [totalPages, setTotalPages] = useState(1);
+  const [total, setTotal] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedCategory, setSelectedCategory] = useState(null);
+  const [selectedRegion, setSelectedRegion] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const newsPerPage = 12;
-
-  const { data: categories, loading: categoriesLoading } = useFetch(
-    () => newsService.getCategories()
-  );
 
   useEffect(() => {
-    loadNews();
-  }, [selectedCategory]);
+    loadNews(1);
+    setCurrentPage(1);
+  }, [selectedRegion]);
 
-  const loadNews = async () => {
+  useEffect(() => {
+    loadNews(currentPage);
+  }, [currentPage]);
+
+  const loadNews = async (page) => {
     try {
       setLoading(true);
       setError(null);
-      let data;
-
-      if (selectedCategory) {
-        data = await newsService.getNewsByCategory(selectedCategory);
-      } else {
-        data = await newsService.getAllNews();
-      }
-
-      setNews(data.noticias || data || []);
-      setCurrentPage(1);
+      const params = { page, limit: NEWS_PER_PAGE };
+      if (selectedRegion) params.region_id = selectedRegion;
+      const result = await newsService.getAll(params);
+      setNews(result.data || []);
+      setTotalPages(result.totalPages || 1);
+      setTotal(result.total || 0);
     } catch (err) {
       setError('Erro ao carregar notícias. Tente novamente mais tarde.');
       console.error(err);
@@ -47,40 +51,30 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    let filtered = news;
-
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(
+  const displayedNews = searchQuery.trim()
+    ? news.filter(
         (item) =>
-          item.titulo?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.resumo?.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
+          item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          item.summary?.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : news;
 
-    setFilteredNews(filtered);
-    setCurrentPage(1);
-  }, [searchQuery, news]);
-
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-  };
-
-  const handleCategoryChange = (categoryId) => {
-    setSelectedCategory(categoryId);
-  };
-
-  const totalPages = Math.ceil(filteredNews.length / newsPerPage);
-  const startIndex = (currentPage - 1) * newsPerPage;
-  const displayedNews = filteredNews.slice(startIndex, startIndex + newsPerPage);
+  const startIndex = (currentPage - 1) * NEWS_PER_PAGE;
 
   return (
     <div className="min-h-screen bg-white pt-16 pb-16">
       {/* Hero Banner com Busca */}
-      <div className="relative h-96 md:h-[500px] overflow-hidden" style={{backgroundImage: 'linear-gradient(rgba(30, 10, 60, 0.65), rgba(30, 10, 60, 0.65)), url("https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&h=600&fit=crop")', backgroundSize: 'cover', backgroundPosition: 'center', backgroundAttachment: 'fixed'}}>
-        
+      <div
+        className="relative h-96 md:h-[500px] overflow-hidden"
+        style={{
+          backgroundImage:
+            'linear-gradient(rgba(30, 10, 60, 0.65), rgba(30, 10, 60, 0.65)), url("https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&h=600&fit=crop")',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          backgroundAttachment: 'fixed',
+        }}
+      >
         <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
-          {/* Logo/Título */}
           <div className="text-center mb-8">
             <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg">
               Agência de Notícias
@@ -90,13 +84,12 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Search Bar */}
           <div className="w-full max-w-2xl mb-8">
             <div className="relative">
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Pesquise notícias..."
                 className="w-full px-6 py-4 rounded-full border-0 focus:outline-none focus:ring-2 focus:ring-sao-luis-purple shadow-lg text-base"
               />
@@ -109,16 +102,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Filter Tabs */}
           <div className="flex gap-4 flex-wrap justify-center">
             <button className="px-6 py-2 bg-white text-sao-luis-purple font-semibold rounded-full hover:shadow-lg transition-all">
               ● Notícias
-            </button>
-            <button className="px-6 py-2 bg-white bg-opacity-80 text-gray-700 font-semibold rounded-full hover:shadow-lg transition-all">
-              ● Fotos
-            </button>
-            <button className="px-6 py-2 bg-white bg-opacity-80 text-gray-700 font-semibold rounded-full hover:shadow-lg transition-all">
-              ● Vídeos
             </button>
           </div>
         </div>
@@ -128,19 +114,31 @@ export default function Home() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="space-y-6 mb-12 mt-12">
           <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <CategoryFilter
-              categories={categories}
-              selectedCategory={selectedCategory}
-              onCategoryChange={handleCategoryChange}
-              loading={categoriesLoading}
-            />
-            {filteredNews.length > 0 && (
+            {/* Filtro por região */}
+            <div className="w-full max-w-xs">
+              <div className="relative">
+                <select
+                  value={selectedRegion}
+                  onChange={(e) => setSelectedRegion(e.target.value)}
+                  className="w-full px-4 py-3 pr-10 rounded-lg border-2 border-sao-luis-purple bg-white focus:border-sao-luis-purple-dark focus:outline-none transition-colors appearance-none cursor-pointer text-sm sm:text-base shadow-md focus:shadow-lg"
+                >
+                  {REGIONS.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {total > 0 && (
               <div className="text-sm text-gray-600 bg-sao-luis-purple-light px-4 py-2 rounded-lg shadow-md">
-                Mostrando <span className="font-semibold">{startIndex + 1}</span> a{' '}
+                Mostrando{' '}
+                <span className="font-semibold">{startIndex + 1}</span> a{' '}
                 <span className="font-semibold">
-                  {Math.min(startIndex + newsPerPage, filteredNews.length)}
+                  {Math.min(startIndex + NEWS_PER_PAGE, total)}
                 </span>{' '}
-                de <span className="font-semibold">{filteredNews.length}</span> notícias
+                de <span className="font-semibold">{total}</span> notícias
               </div>
             )}
           </div>
@@ -153,8 +151,8 @@ export default function Home() {
         )}
 
         {loading ? (
-          <SkeletonLoader count={newsPerPage} />
-        ) : filteredNews.length === 0 ? (
+          <SkeletonLoader count={NEWS_PER_PAGE} />
+        ) : displayedNews.length === 0 ? (
           <div className="text-center py-16 bg-gray-50 rounded-lg shadow-md">
             <div className="text-6xl mb-4">📰</div>
             <p className="text-gray-500 text-lg mb-2">Nenhuma notícia encontrada</p>
@@ -169,11 +167,11 @@ export default function Home() {
                 <NewsCard
                   key={item.id}
                   id={item.id}
-                  title={item.titulo}
-                  summary={item.resumo}
-                  image={item.imagem}
-                  date={item.data}
-                  category={item.categoria}
+                  title={item.title}
+                  summary={item.summary}
+                  image={item.imageUrl}
+                  date={item.created_at}
+                  category={item.category}
                 />
               ))}
             </div>

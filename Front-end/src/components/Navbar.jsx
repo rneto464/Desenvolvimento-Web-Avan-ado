@@ -1,10 +1,12 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Newspaper, Menu, X } from 'lucide-react';
+import { Newspaper, Menu, X, Bookmark } from 'lucide-react';
 import { useState } from 'react';
+import { useReadlistContext } from '../context/ReadlistContext';
 
 export default function Navbar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
+  const { readlist } = useReadlistContext();
 
   return (
     <nav className="fixed top-0 w-full bg-white shadow-lg z-50">
@@ -45,6 +47,22 @@ export default function Navbar() {
             >
               Contato
             </a>
+            <Link
+              to="/readlist"
+              className={`relative flex items-center gap-1.5 text-sm font-semibold transition-colors ${
+                location.pathname === '/readlist'
+                  ? 'text-sao-luis-purple border-b-2 border-sao-luis-purple pb-2'
+                  : 'text-gray-600 hover:text-sao-luis-purple'
+              }`}
+            >
+              <Bookmark className="w-4 h-4" />
+              Ler depois
+              {readlist.length > 0 && (
+                <span className="absolute -top-2 -right-3 bg-sao-luis-purple text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold">
+                  {readlist.length > 9 ? '9+' : readlist.length}
+                </span>
+              )}
+            </Link>
           </div>
 
           {/* Social Icons */}
@@ -106,6 +124,19 @@ export default function Navbar() {
             >
               Contato
             </a>
+            <Link
+              to="/readlist"
+              className="flex items-center gap-1.5 py-2 text-sm font-semibold text-gray-600 hover:text-sao-luis-purple"
+              onClick={() => setIsOpen(false)}
+            >
+              <Bookmark className="w-4 h-4" />
+              Ler depois
+              {readlist.length > 0 && (
+                <span className="bg-sao-luis-purple text-white text-xs px-1.5 py-0.5 rounded-full font-bold">
+                  {readlist.length > 9 ? '9+' : readlist.length}
+                </span>
+              )}
+            </Link>
           </div>
         )}
       </div>
