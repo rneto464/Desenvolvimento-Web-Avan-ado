@@ -2,9 +2,10 @@ import { useState, useEffect } from 'react';
 import NewsCard from '../components/NewsCard';
 import SkeletonLoader from '../components/SkeletonLoader';
 import { newsService } from '../services/api';
+import { Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const REGIONS = [
-  { id: '', label: 'Todas as Regiões' },
+  { id: '', label: 'Todas as regiões' },
   { id: '1', label: 'São Luís' },
   { id: '2', label: 'Raposa' },
   { id: '3', label: 'Paço do Lumiar' },
@@ -62,90 +63,76 @@ export default function Home() {
   const startIndex = (currentPage - 1) * NEWS_PER_PAGE;
 
   return (
-    <div className="min-h-screen bg-white pt-16 pb-16">
-      {/* Hero Banner com Busca */}
-      <div
-        className="relative h-96 md:h-[500px] overflow-hidden"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(30, 10, 60, 0.65), rgba(30, 10, 60, 0.65)), url("https://images.unsplash.com/photo-1519046904884-53103b34b206?w=1200&h=600&fit=crop")',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundAttachment: 'fixed',
-        }}
-      >
-        <div className="absolute inset-0 flex flex-col items-center justify-center px-4">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-2 drop-shadow-lg">
-              Agência de Notícias
-            </h1>
-            <p className="text-lg md:text-xl text-purple-100 drop-shadow-md">
-              São Luís - Maranhão
-            </p>
-          </div>
+    <div className="min-h-screen bg-news-surface pt-14 pb-16">
 
-          <div className="w-full max-w-2xl mb-8">
-            <div className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Pesquise notícias..."
-                className="w-full px-6 py-4 rounded-full border-0 focus:outline-none focus:ring-2 focus:ring-sao-luis-purple shadow-lg text-base"
-              />
-              <button
-                onClick={() => {}}
-                className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-purple text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg transition-all"
-              >
-                Buscar
-              </button>
-            </div>
-          </div>
+      {/* Masthead editorial */}
+      <div className="bg-news-ink">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <p className="text-[11px] font-bold tracking-[0.25em] text-news-red uppercase mb-3">
+            São Luís — Maranhão
+          </p>
+          <h1 className="text-3xl sm:text-5xl font-black text-white leading-none tracking-tight mb-4">
+            Agência de Notícias
+          </h1>
+          <div className="w-12 h-0.5 bg-news-red mb-8" />
 
-          <div className="flex gap-4 flex-wrap justify-center">
-            <button className="px-6 py-2 bg-white text-sao-luis-purple font-semibold rounded-full hover:shadow-lg transition-all">
-              ● Notícias
+          {/* Search */}
+          <div className="flex max-w-xl">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar notícias..."
+              className="flex-1 px-4 py-3 bg-news-charcoal border border-gray-700 text-white placeholder-gray-500 text-sm focus:outline-none focus:border-news-red transition-colors"
+            />
+            <button className="px-5 py-3 bg-news-red text-white text-sm font-semibold hover:bg-news-red-dark transition-colors flex items-center gap-2">
+              <Search className="w-4 h-4" />
+              Buscar
             </button>
           </div>
         </div>
       </div>
 
-      {/* Filtros e Notícias */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="space-y-6 mb-12 mt-12">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            {/* Filtro por região */}
-            <div className="w-full max-w-xs">
-              <div className="relative">
-                <select
-                  value={selectedRegion}
-                  onChange={(e) => setSelectedRegion(e.target.value)}
-                  className="w-full px-4 py-3 pr-10 rounded-lg border-2 border-sao-luis-purple bg-white focus:border-sao-luis-purple-dark focus:outline-none transition-colors appearance-none cursor-pointer text-sm sm:text-base shadow-md focus:shadow-lg"
-                >
-                  {REGIONS.map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {total > 0 && (
-              <div className="text-sm text-gray-600 bg-sao-luis-purple-light px-4 py-2 rounded-lg shadow-md">
-                Mostrando{' '}
-                <span className="font-semibold">{startIndex + 1}</span> a{' '}
-                <span className="font-semibold">
-                  {Math.min(startIndex + NEWS_PER_PAGE, total)}
-                </span>{' '}
-                de <span className="font-semibold">{total}</span> notícias
-              </div>
-            )}
+      {/* Barra de filtros */}
+      <div className="bg-white border-b border-news-rule">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="text-xs font-bold uppercase tracking-widest text-news-muted">Região</span>
+            <select
+              value={selectedRegion}
+              onChange={(e) => setSelectedRegion(e.target.value)}
+              className="text-sm text-news-graphite border border-news-rule bg-white px-3 py-1.5 focus:outline-none focus:border-news-red transition-colors cursor-pointer appearance-none pr-8"
+              style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'8\' viewBox=\'0 0 12 8\'%3E%3Cpath d=\'M1 1l5 5 5-5\' stroke=\'%23777\' stroke-width=\'1.5\' fill=\'none\' stroke-linecap=\'round\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 10px center' }}
+            >
+              {REGIONS.map((r) => (
+                <option key={r.id} value={r.id}>{r.label}</option>
+              ))}
+            </select>
           </div>
+
+          {total > 0 && !loading && (
+            <p className="text-xs text-news-muted">
+              Exibindo{' '}
+              <span className="font-semibold text-news-graphite">{startIndex + 1}–{Math.min(startIndex + NEWS_PER_PAGE, total)}</span>
+              {' '}de{' '}
+              <span className="font-semibold text-news-graphite">{total}</span>
+              {' '}notícias
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Conteúdo */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        {/* Rótulo de seção */}
+        <div className="flex items-center gap-3 mb-6">
+          <span className="section-label">Últimas Notícias</span>
+          <div className="flex-1 border-t border-news-rule" />
         </div>
 
         {error && (
-          <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 text-red-700 mb-8">
+          <div className="border-l-4 border-red-500 bg-red-50 p-4 text-sm text-red-700 mb-6">
             {error}
           </div>
         )}
@@ -153,59 +140,77 @@ export default function Home() {
         {loading ? (
           <SkeletonLoader count={NEWS_PER_PAGE} />
         ) : displayedNews.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-lg shadow-md">
-            <div className="text-6xl mb-4">📰</div>
-            <p className="text-gray-500 text-lg mb-2">Nenhuma notícia encontrada</p>
-            <p className="text-gray-400 text-sm">
-              Tente ajustar seus filtros ou termo de busca
-            </p>
+          <div className="text-center py-20">
+            <svg className="w-12 h-12 text-news-rule mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+            </svg>
+            <p className="text-news-muted font-medium">Nenhuma notícia encontrada</p>
+            <p className="text-news-subtle text-sm mt-1">Ajuste o filtro ou o termo de busca</p>
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-px bg-news-rule border border-news-rule mb-8">
               {displayedNews.map((item) => (
-                <NewsCard
-                  key={item.id}
-                  id={item.id}
-                  title={item.title}
-                  summary={item.summary}
-                  image={item.imageUrl}
-                  date={item.created_at}
-                  category={item.category}
-                />
+                <div key={item.id} className="bg-news-surface">
+                  <NewsCard
+                    id={item.id}
+                    title={item.title}
+                    summary={item.summary}
+                    image={item.imageUrl}
+                    date={item.created_at}
+                    category={item.category}
+                  />
+                </div>
               ))}
             </div>
 
+            {/* Paginação */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center gap-2">
+              <div className="flex items-center justify-center gap-1 pt-4 border-t border-news-rule">
                 <button
                   onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
-                  className="px-4 py-2 border-2 border-sao-luis-purple rounded-lg text-sao-luis-purple hover:bg-sao-luis-purple-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold shadow-md hover:shadow-lg"
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-news-muted border border-news-rule hover:border-news-graphite hover:text-news-graphite disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
-                  ← Anterior
+                  <ChevronLeft className="w-4 h-4" />
+                  Anterior
                 </button>
 
-                {Array.from({ length: totalPages }).map((_, i) => (
-                  <button
-                    key={i + 1}
-                    onClick={() => setCurrentPage(i + 1)}
-                    className={`px-3 py-2 rounded-lg font-medium transition-colors shadow-md ${
-                      currentPage === i + 1
-                        ? 'bg-gradient-purple text-white'
-                        : 'border-2 border-sao-luis-purple text-sao-luis-purple hover:bg-sao-luis-purple-light'
-                    }`}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
+                <div className="flex items-center gap-1 mx-2">
+                  {Array.from({ length: totalPages }).map((_, i) => {
+                    const page = i + 1;
+                    const isActive = currentPage === page;
+                    const showPage = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                    const showEllipsis = !showPage && (page === 2 || page === totalPages - 1);
+
+                    if (showEllipsis) return (
+                      <span key={page} className="px-1 text-news-subtle text-sm">…</span>
+                    );
+                    if (!showPage) return null;
+
+                    return (
+                      <button
+                        key={page}
+                        onClick={() => setCurrentPage(page)}
+                        className={`w-8 h-8 text-sm font-medium transition-colors ${
+                          isActive
+                            ? 'bg-news-red text-white'
+                            : 'text-news-muted border border-news-rule hover:border-news-graphite hover:text-news-graphite'
+                        }`}
+                      >
+                        {page}
+                      </button>
+                    );
+                  })}
+                </div>
 
                 <button
                   onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                   disabled={currentPage === totalPages}
-                  className="px-4 py-2 border-2 border-sao-luis-purple rounded-lg text-sao-luis-purple hover:bg-sao-luis-purple-light disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold shadow-md hover:shadow-lg"
+                  className="flex items-center gap-1 px-3 py-2 text-sm font-medium text-news-muted border border-news-rule hover:border-news-graphite hover:text-news-graphite disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 >
-                  Próximo →
+                  Próximo
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
             )}
