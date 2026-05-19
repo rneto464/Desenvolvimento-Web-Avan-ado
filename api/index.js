@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import cron from 'node-cron';
 import 'dotenv/config';
 
 import { scrapeAndSyncG1 } from './src/integrations/g1ScrapingIntegration.js';
@@ -10,6 +9,7 @@ import logger from './src/middlewares/logger.js';
 import regionRoutes from './src/routes/regionRoutes.js';
 import newsRoutes from './src/routes/newsRoutes.js';
 import ibgeRoutes from './src/routes/ibgeRoutes.js';
+import cronRoutes from './src/routes/cronRoutes.js';
 import { swaggerUi, swaggerDocs } from './src/docs/swagger.js';
 
 const app = express();
@@ -48,6 +48,7 @@ app.get('/api/health', (req, res) => {
 app.use('/api/regions', regionRoutes);
 app.use('/api/news', newsRoutes);
 app.use('/api/ibge', ibgeRoutes);
+app.use('/api/cron', cronRoutes);
 
 // Tratamento para rota não encontrada
 app.use((req, res) => {
@@ -60,20 +61,11 @@ app.use(errorHandler);
 app.listen(PORT, async () => {
   logger.info('SERVER', `API rodando em http://localhost:${PORT}`);
 
-  // Sincronização inicial ao subir o servidor
-  logger.info('CRON', 'Sincronização inicial iniciada...');
-  scrapeAndSyncG1()
-    .then(r => logger.info('CRON', `Inicial: ${r.insertedArticles} novas notícias inseridas.`))
-    .catch(e => logger.error('CRON', `Erro na sincronização inicial: ${e.message}`));
-
-  // Agendamento: todo início de hora (0 * * * *)
-  cron.schedule('0 * * * *', async () => {
-    logger.info('CRON', `${new Date().toLocaleString('pt-BR')} - Sincronizando notícias G1...`);
-    try {
-      const result = await scrapeAndSyncG1();
-      logger.info('CRON', `${result.insertedArticles} novas notícias inseridas.`);
-    } catch (err) {
-      logger.error('CRON', `Erro: ${err.message}`);
-    }
-  });
+  // Sincronização inicial apenas em desenvolvimento (em produção o Vercel Cron Job cuida do agendamento)
+  if (process.env.NODE_ENV !== 'production') {
+    logger.info('CRON', 'Sincronização inicial iniciada (modo dev)...');
+    scrapeAndSyncG1()
+      .then(r => logger.info('CRON', `Inicial: ${r.insertedArticles} novas notícias inseridas.`))
+      .catch(e => logger.error('CRON', `Erro na sincronização inicial: ${e.message}`));
+  }
 });
