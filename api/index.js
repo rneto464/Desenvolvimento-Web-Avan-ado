@@ -58,14 +58,17 @@ app.use((req, res) => {
 // ✅ Log de erros — deve ser o último middleware (4 argumentos obrigatórios)
 app.use(errorHandler);
 
-app.listen(PORT, async () => {
-  logger.info('SERVER', `API rodando em http://localhost:${PORT}`);
-
-  // Sincronização inicial apenas em desenvolvimento (em produção o Vercel Cron Job cuida do agendamento)
-  if (process.env.NODE_ENV !== 'production') {
+// Em ambiente serverless (Vercel) não iniciamos um servidor HTTP —
+// a Vercel usa o export default como handler diretamente.
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, async () => {
+    logger.info('SERVER', `API rodando em http://localhost:${PORT}`);
     logger.info('CRON', 'Sincronização inicial iniciada (modo dev)...');
     scrapeAndSyncG1()
       .then(r => logger.info('CRON', `Inicial: ${r.insertedArticles} novas notícias inseridas.`))
       .catch(e => logger.error('CRON', `Erro na sincronização inicial: ${e.message}`));
-  }
-});
+  });
+}
+
+// Export necessário para a Vercel usar o Express como serverless function handler
+export default app;
