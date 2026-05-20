@@ -38,9 +38,7 @@ export async function getRegionData(regionId) {
  * @param {{ page?: number, limit?: number }} opts
  * @returns {Promise<{ region_id: string, page: number, limit: number, total: number, articles: object[] }>}
  */
-export async function getRegionNews(regionId, opts = {}) {
-  const page = opts.page || 1;
-  const limit = opts.limit || 10;
+export async function getRegionNews(regionId, { page = 1, limit = 10 } = {}) {
   const from = (page - 1) * limit;
   const to = from + limit - 1;
 

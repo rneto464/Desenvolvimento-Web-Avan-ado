@@ -10,6 +10,11 @@ if (!url || !anonKey) {
 }
 
 // Leituras públicas — respeita RLS
-const supabase = createClient(url || '', anonKey || ''); // fallback to empty string to avoid crash during initialization if env vars are missing, though it will fail on query.
+// Export named `publicClient` (leitura pública) e `adminClient` (privilegiado).
+export const publicClient = createClient(url || '', anonKey || '');
 
-export default supabase;
+export const adminClient = serviceKey
+  ? createClient(url || '', serviceKey, { auth: { persistSession: false } })
+  : publicClient;
+
+export default publicClient;

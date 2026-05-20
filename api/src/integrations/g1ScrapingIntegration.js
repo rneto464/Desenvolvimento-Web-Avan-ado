@@ -1,93 +1,75 @@
-import puppeteer from 'puppeteer';
-import supabase from '../database/db.js';
+import axios from 'axios';
+import * as cheerio from 'cheerio';
 import { detectRegion } from '../utils/regionDetector.js';
+import { publicClient, adminClient } from '../database/db.js';
 
 const G1_PAGES = [
   { url: 'https://g1.globo.com/ma/maranhao/videos-jmtv-1-edicao/', source: 'G1 - JMTV 1ª Edição' },
   { url: 'https://g1.globo.com/ma/maranhao/ultimas-noticias/', source: 'G1 - Últimas Notícias MA' }
 ];
 
-async function autoScroll(page) {
-  await page.evaluate(async () => {
-    await new Promise((resolve) => {
-      let lastHeight = document.body.scrollHeight;
-      let attempts = 0;
-      const timer = setInterval(() => {
-        window.scrollBy(0, 900);
-        attempts++;
-        const newHeight = document.body.scrollHeight;
-        if (newHeight === lastHeight || attempts >= 25) {
-          clearInterval(timer);
-          resolve();
-        }
-        lastHeight = newHeight;
-      }, 350);
-    });
-  });
-  await new Promise(r => setTimeout(r, 1000));
-  await page.evaluate(() => window.scrollTo(0, 0));
+const HTTP_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+};
+
+function stripHtml(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 }
 
-async function scrapePage(page, pageUrl, source) {
+function safeUrl(str) {
+  if (typeof str !== 'string' || !str) return null;
   try {
-    await page.goto(pageUrl, { waitUntil: 'networkidle2', timeout: 30000 });
-    await page.waitForSelector('.bastian-feed-item', { timeout: 15000 });
-    await autoScroll(page);
+    const parsed = new URL(str);
+    return ['http:', 'https:'].includes(parsed.protocol) ? str : null;
+  } catch {
+    return null;
+  }
+}
 
-    return await page.evaluate((src) => {
-      const results = [];
-      const seen = new Set();
+async function scrapePage(pageUrl, source) {
+  try {
+    const { data: html } = await axios.get(pageUrl, { headers: HTTP_HEADERS, timeout: 20000 });
+    const $ = cheerio.load(html);
+    const results = [];
+    const seen = new Set();
 
-      function add(title, url, imageUrl, timeAgo, summary) {
-        if (!url || !url.includes('g1.globo.com') || seen.has(url)) return;
-        seen.add(url);
-        results.push({
-          title: title?.trim() || '',
-          url,
-          imageUrl: imageUrl || null,
-          timeAgo: timeAgo?.trim() || 'Recente',
-          summary: summary?.trim() || '',
-          source: src
-        });
-      }
+    function add(title, url, imageUrl, timeAgo, summary) {
+      if (!url || !url.includes('g1.globo.com') || seen.has(url)) return;
+      seen.add(url);
+      results.push({ title: title?.trim() || '', url, imageUrl: imageUrl || null, timeAgo: timeAgo?.trim() || 'Recente', summary: summary?.trim() || '', source });
+    }
 
-      // 1. Feed principal — artigos padrão
-      document.querySelectorAll('.bastian-feed-item[data-type="materia"]').forEach(item => {
-        const link = item.querySelector('a.feed-post-link');
-        const img  = item.querySelector('.bstn-fd-picture-image');
-        const time = item.querySelector('.feed-post-datetime');
-        const summ = item.querySelector('.feed-post-body-resumo p');
-        if (link) add(link.textContent, link.href, img?.src, time?.textContent, summ?.textContent);
-      });
+    // 1. Feed principal — artigos padrão
+    $('[data-type="materia"]').each((_, item) => {
+      const link = $(item).find('a.feed-post-link');
+      const img = $(item).find('.bstn-fd-picture-image');
+      const time = $(item).find('.feed-post-datetime');
+      const summary = $(item).find('.feed-post-body-resumo p');
+      if (link.length) add(link.text(), link.attr('href'), img.attr('src'), time.text(), summary.text());
+    });
 
-      // 2. Artigos relacionados dentro do feed principal
-      document.querySelectorAll('.bstn-related .bstn-relateditem a.bstn-relatedtext').forEach(link => {
-        const time = link.querySelector('.feed-post-datetime')?.textContent;
-        add(link.textContent, link.href, null, time, '');
-      });
+    // 2. Artigos relacionados dentro do feed principal
+    $('.bstn-related .bstn-relateditem a.bstn-relatedtext').each((_, link) => {
+      const time = $(link).find('.feed-post-datetime').text();
+      add($(link).text(), $(link).attr('href'), null, time, '');
+    });
 
-      // 3. Playlists de vídeo
-      document.querySelectorAll('.post-playlist .media-wrapper-slider').forEach(wrapper => {
-        const title = wrapper.querySelector('.feed-text-wrapper-slider a')?.textContent;
-        const img   = wrapper.querySelector('.thumbnail-image');
-        const imgUrl = img ? img.style.backgroundImage.replace(/url\(["']?|["']?\)/g, '') : null;
-        add(title, wrapper.href, imgUrl, 'Recente', '');
-      });
+    // 3. Mais Lidas
+    $('[data-type="post-mais-lidas"] .post-mais-lidas__section a').each((_, link) => {
+      const title = $(link).find('.post-mais-lidas__title').text();
+      add(title, $(link).attr('href'), null, 'Recente', '');
+    });
 
-      // 4. Mais Lidas (coluna direita)
-      document.querySelectorAll('.bastian-feed-item[data-type="post-mais-lidas"] .post-mais-lidas__section a').forEach(link => {
-        const title = link.querySelector('.post-mais-lidas__title')?.textContent;
-        add(title, link.href, null, 'Recente', '');
-      });
+    // 4. Seções agrupadas — Educação, Concursos, Cultura, etc.
+    $('[data-type="post-agrupador-materia"] ul li div a[href]').each((_, link) => {
+      const img = $(link).closest('li').find('img');
+      add($(link).text(), $(link).attr('href'), img.attr('src'), 'Recente', '');
+    });
 
-      // 5. Seções agrupadas — Educação, Concursos, Cultura, etc. (coluna direita)
-      document.querySelectorAll('.bastian-feed-item[data-type="post-agrupador-materia"] ul li div a[href]').forEach(link => {
-        const img = link.closest('li')?.querySelector('img');
-        add(link.textContent, link.href, img?.src, 'Recente', '');
-      });
-
-      return results;
-    }, source);
+    return results;
   } catch (err) {
     console.error(`Erro ao raspar ${pageUrl}:`, err.message);
     return [];
@@ -95,65 +77,52 @@ async function scrapePage(page, pageUrl, source) {
 }
 
 export async function scrapeAndSyncG1() {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+  const allArticles = [];
+  for (const g1Page of G1_PAGES) {
+    const articles = await scrapePage(g1Page.url, g1Page.source);
+    allArticles.push(...articles);
+  }
+
+  // Remover duplicatas por URL
+  const seen = new Set();
+  const unique = allArticles.filter(a => {
+    if (!a.url || seen.has(a.url)) return false;
+    seen.add(a.url);
+    return true;
   });
 
-  try {
-    const page = await browser.newPage();
-    await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+  const itemsToInsert = [];
+  for (const article of unique) {
+    if (!article.title) continue;
+    const regionId = detectRegion(`${article.title} ${article.summary} ${article.url}`);
 
-    const allArticles = [];
-    for (const g1Page of G1_PAGES) {
-      const articles = await scrapePage(page, g1Page.url, g1Page.source);
-      allArticles.push(...articles);
-    }
-
-    // Remover duplicatas por URL
-    const seen = new Set();
-    const unique = allArticles.filter(a => {
-      if (!a.url || seen.has(a.url)) return false;
-      seen.add(a.url);
-      return true;
+    itemsToInsert.push({
+      region_id: regionId,
+      category: 'G1 Maranhão',
+      title: stripHtml(article.title),
+      source: stripHtml(article.source),
+      timeAgo: stripHtml(article.timeAgo),
+      summary: stripHtml(article.summary),
+      url: safeUrl(article.url),
+      imageUrl: safeUrl(article.imageUrl),
+      content: 'Conteúdo disponível no link original.'
     });
-
-    const itemsToInsert = [];
-    for (const article of unique) {
-      if (!article.title) continue;
-      const regionId = detectRegion(`${article.title} ${article.summary} ${article.url}`);
-
-      itemsToInsert.push({
-        region_id: regionId,
-        category:  'G1 Maranhão',
-        title:     stripHtml(article.title),
-        source:    stripHtml(article.source),
-        timeAgo:   stripHtml(article.timeAgo),
-        summary:   stripHtml(article.summary),
-        url:       safeUrl(article.url),
-        imageUrl:  safeUrl(article.imageUrl),
-        content:   'Conteúdo disponível no link original.'
-      });
-    }
-
-    let insertedCount = 0;
-    for (const item of itemsToInsert) {
-      if (!item.url) continue;
-      const { data: existing } = await supabase.from('news').select('id').eq('url', item.url).maybeSingle();
-      if (!existing) {
-        const { error } = await supabase.from('news').insert([item]);
-        if (!error) insertedCount++;
-      }
-    }
-
-    return {
-      message: 'Sincronização G1 finalizada.',
-      totalScraped: unique.length,
-      foundArticles: itemsToInsert.length,
-      insertedArticles: insertedCount
-    };
-
-  } finally {
-    await browser.close();
   }
+
+  let insertedCount = 0;
+  for (const item of itemsToInsert) {
+    if (!item.url) continue;
+    const { data: existing } = await publicClient.from('news').select('id').eq('url', item.url).maybeSingle();
+    if (!existing) {
+      const { error } = await adminClient.from('news').insert([item]);
+      if (!error) insertedCount++;
+    }
+  }
+
+  return {
+    message: 'Sincronização G1 finalizada.',
+    totalScraped: unique.length,
+    foundArticles: itemsToInsert.length,
+    insertedArticles: insertedCount
+  };
 }
