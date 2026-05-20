@@ -2,7 +2,6 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { detectRegion } from '../utils/regionDetector.js';
 import { publicClient, adminClient } from '../database/db.js';
-import { publicClient, adminClient } from '../database/db.js';
 import { stripHtml, safeUrl } from '../utils/sanitize.js';
 
 const G1_PAGES = [
