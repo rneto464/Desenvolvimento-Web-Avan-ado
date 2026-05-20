@@ -15,20 +15,6 @@ const HTTP_HEADERS = {
   'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
 };
 
-function stripHtml(str) {
-  if (typeof str !== 'string') return str;
-  return str.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
-}
-
-function safeUrl(str) {
-  if (typeof str !== 'string' || !str) return null;
-  try {
-    const parsed = new URL(str);
-    return ['http:', 'https:'].includes(parsed.protocol) ? str : null;
-  } catch {
-    return null;
-  }
-}
 
 async function scrapePage(pageUrl, source) {
   try {
