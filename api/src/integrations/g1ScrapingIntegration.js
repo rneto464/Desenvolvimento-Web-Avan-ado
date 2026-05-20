@@ -69,11 +69,6 @@ async function scrapePage(pageUrl, source) {
 
     // 1. Feed principal — artigos padrão
     $('[data-type="materia"]').each((_, item) => {
-      const link = $(item).find('a.feed-post-link');
-      const img = $(item).find('.bstn-fd-picture-image');
-      const time = $(item).find('.feed-post-datetime');
-      const summary = $(item).find('.feed-post-body-resumo p');
-      if (link.length) add(link.text(), link.attr('href'), img.attr('src'), time.text(), summary.text());
       const link    = $(item).find('a.feed-post-link');
       const img     = $(item).find('.bstn-fd-picture-image');
       const time    = $(item).find('.feed-post-datetime');
