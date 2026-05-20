@@ -45,13 +45,24 @@ export async function getRegionNews(regionId, { page = 1, limit = 10 } = {}) {
   let query = supabase
     .from('news')
     .select('*', { count: 'exact' })
-    .order('id', { ascending: false })
+    .order('created_at', { ascending: false })
     .range(from, to);
 
-  if (regionId !== 'all') query = query.eq('region_id', regionId);
+  if (regionId !== 'all') {
+    query = query.eq('region_id', regionId);
+  }
 
   const { data, count, error } = await query;
   if (error) throw error;
 
-  return { region_id: regionId, page, limit, total: count ?? 0, articles: data || [] };
+  const enhancedArticles = (data || []).map(item => {
+    const totalSources = 1 + (item.related_sources ? item.related_sources.length : 0);
+    return {
+      ...item,
+      credibility_status: totalSources > 1 ? 'Confirmado (Múltiplas Fontes)' : 'Única Fonte',
+      credibility_score: totalSources
+    };
+  });
+
+  return { region_id: regionId, page, limit, total: count ?? 0, articles: enhancedArticles };
 }

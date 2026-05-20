@@ -1,5 +1,7 @@
 import axios from 'axios';
 import * as cheerio from 'cheerio';
+import { detectRegion } from '../utils/regionDetector.js';
+import { publicClient, adminClient } from '../database/db.js';
 import { publicClient, adminClient } from '../database/db.js';
 import { stripHtml, safeUrl } from '../utils/sanitize.js';
 
@@ -8,14 +10,30 @@ const G1_PAGES = [
   { url: 'https://g1.globo.com/ma/maranhao/ultimas-noticias/', source: 'G1 - Últimas Notícias MA' }
 ];
 
-// Ordem importa: cidades mais específicas primeiro para evitar falso match com São Luís
-const REGIONS_MAP = [
-  { regionId: '4', keywords: ['são josé de ribamar', 'sao jose de ribamar', 'sao-jose-de-ribamar', 'são jose de ribamar', 'sao josé de ribamar', 'ribamar'] },
-  { regionId: '3', keywords: ['paço do lumiar', 'paco do lumiar', 'paco-do-lumiar', 'paço-do-lumiar'] },
-  { regionId: '2', keywords: ['raposa'] },
-  { regionId: '1', keywords: ['são luís', 'sao luis', 'são luis', 'sao luís', 'sao-luis', 'são-luís'] }
-];
+const HTTP_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7'
+};
 
+function stripHtml(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
+}
+
+function safeUrl(str) {
+  if (typeof str !== 'string' || !str) return null;
+  try {
+    const parsed = new URL(str);
+    return ['http:', 'https:'].includes(parsed.protocol) ? str : null;
+  } catch {
+    return null;
+  }
+}
+
+async function scrapePage(pageUrl, source) {
+  try {
+    const { data: html } = await axios.get(pageUrl, { headers: HTTP_HEADERS, timeout: 20000 });
 const HTTP_HEADERS = {
   'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
@@ -53,6 +71,7 @@ async function scrapePage(pageUrl, source) {
     function add(title, url, imageUrl, timeAgo, summary) {
       if (!url || !url.includes('g1.globo.com') || seen.has(url)) return;
       seen.add(url);
+      results.push({ title: title?.trim() || '', url, imageUrl: imageUrl || null, timeAgo: timeAgo?.trim() || 'Recente', summary: summary?.trim() || '', source });
       results.push({
         title:    title?.trim() || '',
         url,
@@ -65,6 +84,11 @@ async function scrapePage(pageUrl, source) {
 
     // 1. Feed principal — artigos padrão
     $('[data-type="materia"]').each((_, item) => {
+      const link = $(item).find('a.feed-post-link');
+      const img = $(item).find('.bstn-fd-picture-image');
+      const time = $(item).find('.feed-post-datetime');
+      const summary = $(item).find('.feed-post-body-resumo p');
+      if (link.length) add(link.text(), link.attr('href'), img.attr('src'), time.text(), summary.text());
       const link    = $(item).find('a.feed-post-link');
       const img     = $(item).find('.bstn-fd-picture-image');
       const time    = $(item).find('.feed-post-datetime');
@@ -122,6 +146,14 @@ export async function scrapeAndSyncG1() {
 
     itemsToInsert.push({
       region_id: regionId,
+      category: 'G1 Maranhão',
+      title: stripHtml(article.title),
+      source: stripHtml(article.source),
+      timeAgo: stripHtml(article.timeAgo),
+      summary: stripHtml(article.summary),
+      url: safeUrl(article.url),
+      imageUrl: safeUrl(article.imageUrl),
+      content: 'Conteúdo disponível no link original.'
       category:  'G1 Maranhão',
       title:     stripHtml(article.title),
       source:    stripHtml(article.source),

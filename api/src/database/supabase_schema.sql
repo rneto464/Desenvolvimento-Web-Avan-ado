@@ -23,7 +23,10 @@ CREATE TABLE IF NOT EXISTS news (
   summary TEXT,
   url TEXT,
   "imageUrl" TEXT,
-  content TEXT
+  content TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()),
+  related_sources TEXT[] DEFAULT '{}',
+  related_urls TEXT[] DEFAULT '{}'
 );
 
 -- Seed Data (Executar apenas uma vez)

@@ -6,8 +6,9 @@ export async function listNews(req, res) {
     const limit     = parseInt(req.query.limit) || 12;
     const region_id = req.query.region_id || undefined;
     const category  = req.query.category  || undefined;
+    const date      = req.query.date      || undefined;
 
-    const result = await newsService.listNews({ page, limit, region_id, category });
+    const result = await newsService.listNews({ page, limit, region_id, category, date });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
