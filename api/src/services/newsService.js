@@ -1,4 +1,4 @@
-import supabase from '../database/db.js';
+import { publicClient, adminClient } from '../database/db.js';
 import { scrapeAndSyncG1 } from '../integrations/g1ScrapingIntegration.js';
 import { scrapeAndSyncImirante } from '../integrations/imiranteScrapingIntegration.js';
 import { scrapeAndSyncOImparcial } from '../integrations/oimparcialScrapingIntegration.js';
@@ -64,7 +64,7 @@ export async function listNews({ page = 1, limit = 12, region_id, category, date
  * @returns {Promise<object|null>}
  */
 export async function getNewsById(id) {
-  const { data, error } = await supabase
+  const { data, error } = await publicClient
     .from('news')
     .select('*')
     .eq('id', id)
@@ -183,7 +183,7 @@ export async function updateNews(id, fields) {
  * @returns {Promise<boolean>} true se encontrada e deletada
  */
 export async function deleteNews(id) {
-  const { data, error } = await supabase
+  const { data, error } = await publicClient
     .from('news')
     .delete()
     .eq('id', id)

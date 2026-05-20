@@ -15,6 +15,11 @@ export const publicClient = createClient(url || '', anonKey || '');
 
 export const adminClient = serviceKey
   ? createClient(url || '', serviceKey, { auth: { persistSession: false } })
+export const publicClient = createClient(url, anonKey);
+
+// Operações privilegiadas — bypassa RLS (use apenas no servidor)
+export const adminClient = serviceKey
+  ? createClient(url, serviceKey, { auth: { persistSession: false } })
   : publicClient;
 
 export default publicClient;

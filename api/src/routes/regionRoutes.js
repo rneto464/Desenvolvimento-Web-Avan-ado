@@ -1,5 +1,17 @@
 import express from 'express';
 import * as regionController from '../controllers/regionController.js';
+import validateRegionId from '../middlewares/validateRegionId.js';
+
+function validatePagination(req, res, next) {
+  let { page = '1', limit = '20' } = req.query;
+  page = parseInt(page, 10);
+  limit = parseInt(limit, 10);
+  if (isNaN(page) || page < 1) return res.status(400).json({ error: 'page deve ser um inteiro >= 1.' });
+  if (isNaN(limit) || limit < 1 || limit > 100) return res.status(400).json({ error: 'limit deve ser um inteiro entre 1 e 100.' });
+  req.query.page = page;
+  req.query.limit = limit;
+  next();
+}
 
 const router = express.Router();
 

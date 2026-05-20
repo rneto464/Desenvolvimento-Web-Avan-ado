@@ -1,6 +1,5 @@
 import express from 'express';
 import cors from 'cors';
-import cron from 'node-cron';
 import 'dotenv/config';
 
 import { scrapeAndSyncG1 } from './src/integrations/g1ScrapingIntegration.js';
@@ -18,12 +17,16 @@ import { swaggerUi, swaggerDocs } from './src/docs/swagger.js';
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Headers de segurança básicos
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
+
+// Headers de segurança — CSP aplicado apenas fora do /api-docs
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '0'); // desativa filtro legado; CSP é suficiente
-  res.setHeader('Content-Security-Policy', "default-src 'none'");
+  res.setHeader('X-XSS-Protection', '0');
+  if (!req.originalUrl.startsWith('/api-docs')) {
+    res.setHeader('Content-Security-Policy', "default-src 'none'");
+  }
   next();
 });
 
@@ -37,9 +40,6 @@ app.use(express.json());
 
 // ✅ Log de requisições e respostas — deve vir antes das rotas
 app.use(requestLogger);
-
-// Swagger route
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 // Health check — qualquer frontend pode usar para verificar se a API está online
 app.get('/api/health', (req, res) => {
@@ -137,6 +137,18 @@ if (!process.env.VERCEL && process.env.DISABLE_SERVERLISTEN !== 'true') {
   startServer();
 } else {
   logger.info('SERVER', 'Modo serverless detectado ou `DISABLE_SERVERLISTEN=true` — não iniciando `app.listen`.');
+}
+
+// Em ambiente serverless (Vercel) não iniciamos um servidor HTTP —
+// a Vercel usa o export default como handler diretamente.
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, async () => {
+    logger.info('SERVER', `API rodando em http://localhost:${PORT}`);
+    logger.info('CRON', 'Sincronização inicial iniciada (modo dev)...');
+    scrapeAndSyncG1()
+      .then(r => logger.info('CRON', `Inicial: ${r.insertedArticles} novas notícias inseridas.`))
+      .catch(e => logger.error('CRON', `Erro na sincronização inicial: ${e.message}`));
+  });
 }
 
 // Export necessário para a Vercel usar o Express como serverless function handler

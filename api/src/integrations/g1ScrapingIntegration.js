@@ -2,6 +2,8 @@ import axios from 'axios';
 import * as cheerio from 'cheerio';
 import { detectRegion } from '../utils/regionDetector.js';
 import { publicClient, adminClient } from '../database/db.js';
+import { publicClient, adminClient } from '../database/db.js';
+import { stripHtml, safeUrl } from '../utils/sanitize.js';
 
 const G1_PAGES = [
   { url: 'https://g1.globo.com/ma/maranhao/videos-jmtv-1-edicao/', source: 'G1 - JMTV 1ª Edição' },
@@ -32,6 +34,36 @@ function safeUrl(str) {
 async function scrapePage(pageUrl, source) {
   try {
     const { data: html } = await axios.get(pageUrl, { headers: HTTP_HEADERS, timeout: 20000 });
+const HTTP_HEADERS = {
+  'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+  'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+  'Accept-Encoding': 'gzip, deflate, br',
+  'Connection': 'keep-alive',
+  'Upgrade-Insecure-Requests': '1',
+};
+
+function detectRegion(text) {
+  const lower = text.toLowerCase();
+  for (const region of REGIONS_MAP) {
+    if (region.keywords.some(kw => lower.includes(kw))) {
+      return region.regionId;
+    }
+  }
+  return '1'; // fallback: São Luís (cobertura geral do MA)
+}
+
+/**
+ * Faz o fetch da página G1 e extrai artigos usando cheerio (sem browser headless).
+ * Compatível com ambientes serverless (Vercel, Railway, etc.).
+ */
+async function scrapePage(pageUrl, source) {
+  try {
+    const { data: html } = await axios.get(pageUrl, {
+      headers: HTTP_HEADERS,
+      timeout: 20000,
+    });
+
     const $ = cheerio.load(html);
     const results = [];
     const seen = new Set();
@@ -40,6 +72,14 @@ async function scrapePage(pageUrl, source) {
       if (!url || !url.includes('g1.globo.com') || seen.has(url)) return;
       seen.add(url);
       results.push({ title: title?.trim() || '', url, imageUrl: imageUrl || null, timeAgo: timeAgo?.trim() || 'Recente', summary: summary?.trim() || '', source });
+      results.push({
+        title:    title?.trim() || '',
+        url,
+        imageUrl: imageUrl || null,
+        timeAgo:  timeAgo?.trim() || 'Recente',
+        summary:  summary?.trim() || '',
+        source
+      });
     }
 
     // 1. Feed principal — artigos padrão
@@ -49,6 +89,13 @@ async function scrapePage(pageUrl, source) {
       const time = $(item).find('.feed-post-datetime');
       const summary = $(item).find('.feed-post-body-resumo p');
       if (link.length) add(link.text(), link.attr('href'), img.attr('src'), time.text(), summary.text());
+      const link    = $(item).find('a.feed-post-link');
+      const img     = $(item).find('.bstn-fd-picture-image');
+      const time    = $(item).find('.feed-post-datetime');
+      const summary = $(item).find('.feed-post-body-resumo p');
+      if (link.length) {
+        add(link.text(), link.attr('href'), img.attr('src'), time.text(), summary.text());
+      }
     });
 
     // 2. Artigos relacionados dentro do feed principal
@@ -78,6 +125,7 @@ async function scrapePage(pageUrl, source) {
 
 export async function scrapeAndSyncG1() {
   const allArticles = [];
+
   for (const g1Page of G1_PAGES) {
     const articles = await scrapePage(g1Page.url, g1Page.source);
     allArticles.push(...articles);
@@ -106,6 +154,14 @@ export async function scrapeAndSyncG1() {
       url: safeUrl(article.url),
       imageUrl: safeUrl(article.imageUrl),
       content: 'Conteúdo disponível no link original.'
+      category:  'G1 Maranhão',
+      title:     stripHtml(article.title),
+      source:    stripHtml(article.source),
+      timeAgo:   stripHtml(article.timeAgo),
+      summary:   stripHtml(article.summary),
+      url:       safeUrl(article.url),
+      imageUrl:  safeUrl(article.imageUrl),
+      content:   'Conteúdo disponível no link original.'
     });
   }
 

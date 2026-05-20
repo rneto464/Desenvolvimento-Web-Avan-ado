@@ -1,9 +1,9 @@
-function stripHtml(str) {
+export function stripHtml(str) {
   if (typeof str !== 'string') return str;
   return str.replace(/<[^>]*>/g, '').replace(/&lt;/g, '<').replace(/&gt;/g, '>').trim();
 }
 
-function safeUrl(str) {
+export function safeUrl(str) {
   if (typeof str !== 'string' || !str) return null;
   try {
     const parsed = new URL(str);
@@ -12,5 +12,3 @@ function safeUrl(str) {
     return null;
   }
 }
-
-module.exports = { stripHtml, safeUrl };
