@@ -1,5 +1,4 @@
 import express from 'express';
-import cors from 'cors';
 import 'dotenv/config';
 
 import { scrapeAndSyncG1 } from './src/integrations/g1ScrapingIntegration.js';
@@ -30,12 +29,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// CORS aberto para qualquer origem — qualquer frontend pode acoplar
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+// CORS aberto para qualquer origem — substitui o pacote `cors` que usava url.parse() depreciado
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
 app.use(express.json());
 
 // ✅ Log de requisições e respostas — deve vir antes das rotas
